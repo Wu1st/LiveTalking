@@ -24,6 +24,7 @@ def parse_args():
     parser.add_argument('-l', type=int, default=10)
     parser.add_argument('-m', type=int, default=8)
     parser.add_argument('-r', type=int, default=10)
+    #parser.add_argument('--asr_model_path', type=str, default='/home/wuguinan/Qwen3-asr-finetuning/qlora_adapter/zh-epoch1*', help='Qwen/Qwen3-ASR-1.7B')
 
     # ─── 画面 ──────────────────────────────────────────────────────────
     # parser.add_argument('--W', type=int, default=450, help="GUI width")

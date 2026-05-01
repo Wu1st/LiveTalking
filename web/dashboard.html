@@ -1,773 +1,814 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>livetalking数字人交互平台</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <style>
-        :root {
-            --primary-color: #4361ee;
-            --secondary-color: #3f37c9;
-            --accent-color: #4895ef;
-            --background-color: #f8f9fa;
-            --card-bg: #ffffff;
-            --text-color: #212529;
-            --border-radius: 10px;
-            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LiveTalking 数字人交互平台</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+<style>
+:root {
+  --accent:#4361ee; --accent2:#4cc9f0; --danger:#e63946;
+  --success:#2dc653; --bg:#0f0f1a; --surface:#1a1a2e;
+  --surface2:#22224a; --border:rgba(255,255,255,0.08);
+  --text:#e8e8f0; --text-muted:#7b7b9a; --radius:12px;
+}
+/* 锁定整页高度，禁止页面级滚动 */
+html, body { height:100%; overflow:hidden; margin:0; padding:0; }
+body {
+  font-family:'Segoe UI',system-ui,sans-serif;
+  background:var(--bg); color:var(--text);
+  display:flex; flex-direction:column;
+}
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--background-color);
-            color: var(--text-color);
-            min-height: 100vh;
-            padding-top: 20px;
-        }
+/* ── Topbar ── */
+.topbar {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:9px 18px; background:var(--surface);
+  border-bottom:1px solid var(--border); flex-shrink:0;
+}
+.topbar-title { font-size:15px; font-weight:600; color:var(--accent2); letter-spacing:.05em; }
+.topbar-controls { display:flex; gap:7px; align-items:center; }
+.status-dot {
+  width:8px; height:8px; border-radius:50%;
+  background:var(--danger); display:inline-block;
+  margin-right:5px; transition:background .3s;
+}
+.status-dot.connected  { background:var(--success); box-shadow:0 0 6px var(--success); }
+.status-dot.connecting { background:#f4a261; animation:blink 1s infinite; }
+#status-text { font-size:12px; color:var(--text-muted); }
 
-        .dashboard-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-        }
+/* ── Video (固定高度，不随内容变化) ── */
+.video-section {
+  flex-shrink:0; height:52vh;
+  display:flex; justify-content:center; align-items:center;
+  background:#000; position:relative; overflow:hidden;
+}
+#video { max-width:100%; max-height:100%; object-fit:contain; display:block; }
+.video-overlay { position:absolute; top:10px; left:10px; display:flex; gap:7px; }
+.overlay-badge { font-size:11px; padding:3px 10px; border-radius:20px; font-weight:600; }
+.badge-rec { background:rgba(230,57,70,.85); color:#fff; display:none; }
+.badge-rec.active { display:flex; align-items:center; gap:5px; }
+.badge-rec::before { content:''; width:7px; height:7px; border-radius:50%; background:#fff; animation:blink 1s infinite; }
+.badge-vad { background:rgba(76,201,240,.15); border:1px solid var(--accent2); color:var(--accent2); }
+.badge-vad.speaking { background:rgba(45,198,83,.15); border-color:var(--success); color:var(--success); }
+.vad-bar-wrap {
+  position:absolute; bottom:10px; left:50%; transform:translateX(-50%);
+  display:flex; gap:3px; align-items:flex-end;
+  height:24px; opacity:0; transition:opacity .3s;
+}
+.vad-bar-wrap.active { opacity:1; }
+.vad-bar { width:4px; border-radius:2px; background:var(--accent2); height:4px; transition:height .08s; }
 
-        .card {
-            background-color: var(--card-bg);
-            border-radius: var(--border-radius);
-            box-shadow: var(--box-shadow);
-            border: none;
-            margin-bottom: 20px;
-            overflow: hidden;
-        }
+/* ── Bottom panel：占满剩余高度 ── */
+.bottom-panel {
+  flex:1; min-height:0;          /* min-height:0 是关键 */
+  display:flex; flex-direction:column;
+  background:var(--surface); overflow:hidden;
+}
 
-        .card-header {
-            background-color: var(--primary-color);
-            color: white;
-            font-weight: 600;
-            padding: 15px 20px;
-            border-bottom: none;
-        }
+/* Tabs */
+.panel-tabs {
+  display:flex; border-bottom:1px solid var(--border);
+  padding:0 16px; flex-shrink:0;
+}
+.tab-btn {
+  padding:9px 16px; font-size:13px; font-weight:500;
+  color:var(--text-muted); background:none; border:none;
+  border-bottom:2px solid transparent; cursor:pointer;
+  transition:all .2s; margin-bottom:-1px;
+}
+.tab-btn:hover { color:var(--text); }
+.tab-btn.active { color:var(--accent2); border-bottom-color:var(--accent2); }
+.tab-actions { margin-left:auto; display:flex; align-items:center; gap:8px; }
 
-        .video-container {
-            position: relative;
-            width: 100%;
-            background-color: #000;
-            border-radius: var(--border-radius);
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+/* Tab panes */
+.tab-pane { display:none; flex:1; min-height:0; flex-direction:column; overflow:hidden; }
+.tab-pane.active { display:flex; }
 
-        video {
-            max-width: 100%;
-            max-height: 100%;
-            display: block;
-            border-radius: var(--border-radius);
-        }
+/* ── 对话模式 ── */
+/* 消息列表内部滚动，不撑开父容器 */
+.chat-messages {
+  flex:1; min-height:0; overflow-y:auto;
+  padding:12px 16px; display:flex; flex-direction:column; gap:6px;
+}
+.chat-messages::-webkit-scrollbar { width:4px; }
+.chat-messages::-webkit-scrollbar-thumb { background:var(--surface2); border-radius:2px; }
+.msg { padding:7px 13px; border-radius:10px; font-size:14px; line-height:1.5; max-width:85%; }
+.msg-user   { background:var(--accent); color:#fff; align-self:flex-end; border-bottom-right-radius:3px; }
+.msg-system { background:var(--surface2); color:var(--text-muted); align-self:flex-start; border-bottom-left-radius:3px; font-size:13px; }
 
-        .controls-container {
-            padding: 20px;
-        }
+/* 底部固定操作区 */
+.chat-bottom { flex-shrink:0; border-top:1px solid var(--border); }
+.chat-input-row {
+  padding:8px 12px; display:flex; gap:7px; align-items:flex-end;
+}
+.chat-input-row textarea {
+  flex:1; background:var(--surface2); border:1px solid var(--border);
+  border-radius:var(--radius); color:var(--text);
+  padding:7px 12px; font-size:14px; resize:none;
+  min-height:36px; max-height:88px; font-family:inherit;
+}
+.chat-input-row textarea:focus { outline:none; border-color:var(--accent); }
+.chat-input-row textarea::placeholder { color:var(--text-muted); }
 
-        .btn-primary {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-        }
+/* 语音行：PTT + 分隔 + VAD 同一行 */
+.voice-row {
+  padding:7px 12px 10px;
+  display:flex; align-items:center; gap:9px;
+  border-top:1px solid var(--border); flex-wrap:wrap;
+}
+.vad-sep { width:1px; height:26px; background:var(--border); flex-shrink:0; }
+.slider-wrap { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-muted); }
+input[type=range] { accent-color:var(--accent2); }
 
-        .btn-primary:hover {
-            background-color: var(--secondary-color);
-            border-color: var(--secondary-color);
-        }
+/* PTT 录音状态 */
+#ptt-btn.recording {
+  background:var(--danger) !important; color:#fff !important;
+  border-color:var(--danger) !important; animation:pulse-ring 1.5s infinite;
+}
+/* VAD 激活状态 */
+#vad-toggle.active {
+  background:var(--danger); color:#fff; border-color:var(--danger);
+  animation:pulse-ring 1.5s infinite;
+}
 
-        .btn-outline-primary {
-            color: var(--primary-color);
-            border-color: var(--primary-color);
-        }
+/* ── 朗读模式 ── */
+.tts-pane { padding:16px; flex:1; min-height:0; display:flex; flex-direction:column; gap:10px; }
+.tts-pane label { font-size:13px; color:var(--text-muted); flex-shrink:0; }
+.tts-pane textarea {
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:var(--radius); color:var(--text);
+  padding:12px 14px; font-size:14px; resize:none;
+  flex:1; min-height:0; font-family:inherit;
+}
+.tts-pane textarea:focus { outline:none; border-color:var(--accent); }
 
-        .btn-outline-primary:hover {
-            background-color: var(--primary-color);
-            color: white;
-        }
+/* ── 监听模式 ── */
+.monitor-pane { flex:1; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
+.monitor-toolbar {
+  padding:9px 14px; display:flex; gap:8px; align-items:center;
+  flex-shrink:0; border-bottom:1px solid var(--border); flex-wrap:wrap;
+}
+.monitor-toolbar input[type=text] {
+  flex:1; min-width:100px;
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:var(--radius); color:var(--text);
+  padding:5px 11px; font-size:13px; font-family:inherit;
+}
+.monitor-toolbar input:focus { outline:none; border-color:var(--accent); }
+.monitor-toolbar input::placeholder { color:var(--text-muted); }
+.monitor-savepath {
+  padding:7px 14px; display:flex; gap:8px; align-items:center;
+  flex-shrink:0; border-bottom:1px solid var(--border);
+}
+.monitor-savepath label { font-size:12px; color:var(--text-muted); flex-shrink:0; white-space:nowrap; }
+.monitor-savepath input {
+  flex:1; background:var(--surface2); border:1px solid var(--border);
+  border-radius:var(--radius); color:var(--text);
+  padding:5px 11px; font-size:12px; font-family:inherit;
+}
+.monitor-savepath input:focus { outline:none; border-color:var(--accent); }
+.monitor-savepath input::placeholder { color:var(--text-muted); }
+.monitor-statusbar {
+  padding:5px 14px; display:flex; gap:14px; align-items:center;
+  flex-shrink:0; font-size:12px; color:var(--text-muted);
+  background:rgba(0,0,0,.18); border-bottom:1px solid var(--border);
+}
+.stat-item { display:flex; align-items:center; gap:5px; }
+.mic-dot { width:7px; height:7px; border-radius:50%; background:var(--text-muted); flex-shrink:0; }
+.mic-dot.active   { background:var(--success); animation:blink 1s infinite; }
+.mic-dot.speaking { background:var(--danger);  box-shadow:0 0 5px var(--danger); animation:none; }
+.monitor-scroll {
+  flex:1; min-height:0; overflow-y:auto;
+  padding:10px 14px; display:flex; flex-direction:column; gap:5px;
+}
+.monitor-scroll::-webkit-scrollbar { width:4px; }
+.monitor-scroll::-webkit-scrollbar-thumb { background:var(--surface2); border-radius:2px; }
+.monitor-entry {
+  padding:6px 12px; border-radius:8px;
+  background:var(--surface2); font-size:13px;
+  line-height:1.5; display:flex; gap:10px;
+}
+.monitor-entry-time { color:var(--text-muted); font-size:11px; flex-shrink:0; padding-top:2px; }
+.monitor-entry.highlight { background:rgba(230,57,70,.12); border-left:3px solid var(--danger); }
+.saved-clips {
+  flex-shrink:0; border-top:1px solid var(--border);
+  max-height:120px; overflow-y:auto; padding:8px 14px;
+}
+.saved-clips-title { font-size:11px; color:var(--text-muted); margin-bottom:5px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; }
+.clip-item {
+  background:rgba(67,97,238,.1); border:1px solid rgba(67,97,238,.25);
+  border-radius:8px; padding:7px 11px; font-size:12px;
+  margin-bottom:5px; display:flex; justify-content:space-between; align-items:flex-start; gap:8px;
+}
+.clip-keyword { font-weight:600; color:var(--accent2); font-size:11px; margin-bottom:2px; }
+.clip-preview { color:var(--text-muted); line-height:1.4; }
+.clip-path    { color:var(--text-muted); font-size:10px; margin-top:2px; }
 
-        .form-control {
-            border-radius: var(--border-radius);
-            padding: 10px 15px;
-            border: 1px solid #ced4da;
-        }
+/* ── 通用按钮 ── */
+.btn {
+  display:inline-flex; align-items:center; gap:5px;
+  padding:6px 13px; border-radius:var(--radius); font-size:13px;
+  font-weight:500; border:1px solid transparent;
+  cursor:pointer; transition:all .15s; font-family:inherit; white-space:nowrap;
+}
+.btn:disabled { opacity:.4; cursor:not-allowed; }
+.btn-primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+.btn-primary:hover:not(:disabled) { background:#3451d1; }
+.btn-danger  { background:var(--danger); color:#fff; border-color:var(--danger); }
+.btn-danger:hover:not(:disabled) { background:#c1121f; }
+.btn-ghost   { background:transparent; color:var(--text-muted); border-color:var(--border); }
+.btn-ghost:hover:not(:disabled) { color:var(--text); border-color:rgba(255,255,255,.2); }
+.btn-sm   { padding:4px 10px; font-size:12px; }
+.btn-icon { padding:6px 9px; }
 
-        .form-control:focus {
-            border-color: var(--accent-color);
-            box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.25);
-        }
-
-        .status-indicator {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 5px;
-        }
-
-        .status-connected {
-            background-color: #28a745;
-        }
-
-        .status-disconnected {
-            background-color: #dc3545;
-        }
-
-        .status-connecting {
-            background-color: #ffc107;
-        }
-
-        .asr-container {
-            height: 300px;
-            overflow-y: auto;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border-radius: var(--border-radius);
-            border: 1px solid #ced4da;
-        }
-
-        .asr-text {
-            margin-bottom: 10px;
-            padding: 10px;
-            background-color: white;
-            border-radius: var(--border-radius);
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .user-message {
-            background-color: #e3f2fd;
-            border-left: 4px solid var(--primary-color);
-        }
-
-        .system-message {
-            background-color: #f1f8e9;
-            border-left: 4px solid #8bc34a;
-        }
-
-        .recording-indicator {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background-color: rgba(220, 53, 69, 0.8);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            display: none;
-        }
-
-        .recording-indicator.active {
-            display: flex;
-            align-items: center;
-        }
-
-        .recording-indicator .blink {
-            width: 10px;
-            height: 10px;
-            background-color: #fff;
-            border-radius: 50%;
-            margin-right: 5px;
-            animation: blink 1s infinite;
-        }
-
-        @keyframes blink {
-            0% { opacity: 1; }
-            50% { opacity: 0.3; }
-            100% { opacity: 1; }
-        }
-
-        .mode-switch {
-            margin-bottom: 20px;
-        }
-
-        .nav-tabs .nav-link {
-            color: var(--text-color);
-            border: none;
-            padding: 10px 20px;
-            border-radius: var(--border-radius) var(--border-radius) 0 0;
-        }
-
-        .nav-tabs .nav-link.active {
-            color: var(--primary-color);
-            background-color: var(--card-bg);
-            border-bottom: 3px solid var(--primary-color);
-            font-weight: 600;
-        }
-
-        .tab-content {
-            padding: 20px;
-            background-color: var(--card-bg);
-            border-radius: 0 0 var(--border-radius) var(--border-radius);
-        }
-
-        .settings-panel {
-            padding: 15px;
-            background-color: #f8f9fa;
-            border-radius: var(--border-radius);
-            margin-top: 15px;
-        }
-
-        .footer {
-            text-align: center;
-            margin-top: 30px;
-            padding: 20px 0;
-            color: #6c757d;
-            font-size: 0.9rem;
-        }
-        
-        .voice-record-btn {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background-color: var(--primary-color);
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            margin: 0 auto;
-        }
-        
-        .voice-record-btn:hover {
-            background-color: var(--secondary-color);
-            transform: scale(1.05);
-        }
-        
-        .voice-record-btn:active {
-            background-color: #dc3545;
-            transform: scale(0.95);
-        }
-        
-        .voice-record-btn i {
-            font-size: 24px;
-        }
-        
-        .voice-record-label {
-            text-align: center;
-            margin-top: 10px;
-            font-size: 14px;
-            color: #6c757d;
-        }
-        
-        .video-size-control {
-            margin-top: 15px;
-        }
-        
-        .recording-pulse {
-            animation: pulse 1.5s infinite;
-        }
-        
-        @keyframes pulse {
-            0% {
-                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
-            }
-            70% {
-                box-shadow: 0 0 0 15px rgba(220, 53, 69, 0);
-            }
-            100% {
-                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
-            }
-        }
-    </style>
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+@keyframes pulse-ring {
+  0%  { box-shadow:0 0 0 0 rgba(230,57,70,.5); }
+  70% { box-shadow:0 0 0 10px rgba(230,57,70,0); }
+  100%{ box-shadow:0 0 0 0 rgba(230,57,70,0); }
+}
+</style>
 </head>
 <body>
-    <div class="dashboard-container">
-        <div class="row">
-            <div class="col-12">
-                <h1 class="text-center mb-4">livetalking数字人交互平台</h1>
-            </div>
-        </div>
 
-        <div class="row">
-            <!-- 视频区域 -->
-            <div class="col-lg-8">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <div>
-                            <span class="status-indicator status-disconnected" id="connection-status"></span>
-                            <span id="status-text">未连接</span>
-                        </div>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="video-container">
-                            <video id="video" autoplay playsinline></video>
-                            <div class="recording-indicator" id="recording-indicator">
-                                <div class="blink"></div>
-                                <span>录制中</span>
-                            </div>
-                        </div>
-                        
-                        <div class="controls-container">
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <button class="btn btn-primary w-100" id="start">
-                                        <i class="bi bi-play-fill"></i> 开始连接
-                                    </button>
-                                    <button class="btn btn-danger w-100" id="stop" style="display: none;">
-                                        <i class="bi bi-stop-fill"></i> 停止连接
-                                    </button>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <div class="d-flex">
-                                        <button class="btn btn-outline-primary flex-grow-1 me-2" id="btn_start_record">
-                                            <i class="bi bi-record-fill"></i> 开始录制
-                                        </button>
-                                        <button class="btn btn-outline-danger flex-grow-1" id="btn_stop_record" disabled>
-                                            <i class="bi bi-stop-fill"></i> 停止录制
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-title"><i class="bi bi-person-video2 me-2"></i>LiveTalking</div>
+  <div class="topbar-controls">
+    <span class="status-dot" id="connection-status"></span>
+    <span id="status-text">未连接</span>
+    <button class="btn btn-primary btn-sm" id="start"><i class="bi bi-play-fill"></i> 连接</button>
+    <button class="btn btn-danger btn-sm" id="stop" style="display:none"><i class="bi bi-stop-fill"></i> 断开</button>
+    <button class="btn btn-ghost btn-sm" id="btn_start_record"><i class="bi bi-record-fill"></i> 录制</button>
+    <button class="btn btn-ghost btn-sm" id="btn_stop_record" disabled><i class="bi bi-stop-fill"></i> 停录</button>
+    <label style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:4px;margin-left:4px">
+      <input type="checkbox" id="use-stun"> STUN
+    </label>
+  </div>
+</div>
 
-                            <div class="row">
-                                <div class="col-12">
-                                    <div class="video-size-control">
-                                        <label for="video-size-slider" class="form-label">视频大小调节: <span id="video-size-value">100%</span></label>
-                                        <input type="range" class="form-range" id="video-size-slider" min="50" max="150" value="100">
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="settings-panel mt-3">
-                                <div class="row">
-                                    <div class="col-md-12">
-                                        <div class="form-check form-switch mb-3">
-                                            <input class="form-check-input" type="checkbox" id="use-stun">
-                                            <label class="form-check-label" for="use-stun">使用STUN服务器</label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+<!-- 视频区 -->
+<div class="video-section">
+  <video id="video" autoplay playsinline></video>
+  <div class="video-overlay">
+    <div class="overlay-badge badge-rec" id="recording-indicator">录制中</div>
+    <div class="overlay-badge badge-vad" id="vad-badge" style="display:none">监听中</div>
+  </div>
+  <div class="vad-bar-wrap" id="vad-bars">
+    <div class="vad-bar" id="b0"></div><div class="vad-bar" id="b1"></div>
+    <div class="vad-bar" id="b2"></div><div class="vad-bar" id="b3"></div>
+    <div class="vad-bar" id="b4"></div><div class="vad-bar" id="b5"></div>
+    <div class="vad-bar" id="b6"></div><div class="vad-bar" id="b7"></div>
+  </div>
+</div>
 
-            <!-- 右侧交互 -->
-            <div class="col-lg-4">
-                <div class="card">
-                    <div class="card-header">
-                        <ul class="nav nav-tabs card-header-tabs" id="interaction-tabs" role="tablist">
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link active" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat" type="button" role="tab" aria-controls="chat" aria-selected="true">对话模式</button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="tts-tab" data-bs-toggle="tab" data-bs-target="#tts" type="button" role="tab" aria-controls="tts" aria-selected="false">朗读模式</button>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="card-body">
-                        <div class="tab-content" id="interaction-tabs-content">
-                            <!-- 对话模式 -->
-                            <div class="tab-pane fade show active" id="chat" role="tabpanel" aria-labelledby="chat-tab">
-                                <div class="asr-container mb-3" id="chat-messages">
-                                    <div class="asr-text system-message">
-                                        系统: 欢迎使用livetalking，请点击"开始连接"按钮开始对话。
-                                    </div>
-                                </div>
-                                
-                                <form id="chat-form">
-                                    <div class="input-group mb-3">
-                                        <textarea class="form-control" id="chat-message" rows="3" placeholder="输入您想对数字人说的话..."></textarea>
-                                        <button class="btn btn-primary" type="submit">
-                                            <i class="bi bi-send"></i> 发送
-                                        </button>
-                                    </div>
-                                </form>
-                                
-                                <!-- 按住说话按钮 -->
-                                <div class="voice-record-btn" id="voice-record-btn">
-                                    <i class="bi bi-mic-fill"></i>
-                                </div>
-                                <div class="voice-record-label">按住说话，松开发送</div>
-                            </div>
-                            
-                            <!-- 朗读模式 -->
-                            <div class="tab-pane fade" id="tts" role="tabpanel" aria-labelledby="tts-tab">
-                                <form id="echo-form">
-                                    <div class="mb-3">
-                                        <label for="message" class="form-label">输入要朗读的文本</label>
-                                        <textarea class="form-control" id="message" rows="6" placeholder="输入您想让数字人朗读的文字..."></textarea>
-                                    </div>
-                                    <button type="submit" class="btn btn-primary w-100">
-                                        <i class="bi bi-volume-up"></i> 朗读文本
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+<!-- 底部面板 -->
+<div class="bottom-panel">
+  <div class="panel-tabs">
+    <button class="tab-btn active" data-tab="chat"><i class="bi bi-chat-dots"></i> 对话模式</button>
+    <button class="tab-btn" data-tab="tts"><i class="bi bi-volume-up"></i> 朗读模式</button>
+    <button class="tab-btn" data-tab="monitor"><i class="bi bi-ear"></i> 监听模式</button>
+  </div>
 
-        <div class="footer">
-            <p>Made with ❤️ by Marstaos | Frontend & Performance Optimization</p>
-        </div>
+  <!-- 对话模式 -->
+  <div class="tab-pane active" id="pane-chat">
+    <div class="chat-messages" id="chat-messages">
+      <div class="msg msg-system">欢迎使用 LiveTalking，请点击顶部"连接"按钮开始。</div>
     </div>
+    <div class="chat-bottom">
+      <div class="chat-input-row">
+        <textarea id="chat-message" rows="1" placeholder="输入消息，回车发送…"></textarea>
+        <button class="btn btn-primary btn-icon" id="chat-send" title="发送"><i class="bi bi-send-fill"></i></button>
+        <button class="btn btn-ghost btn-icon" id="interrupt-btn" title="打断"><i class="bi bi-skip-forward-fill"></i></button>
+      </div>
+      <!-- 语音行：PTT + VAD 同一行 -->
+      <div class="voice-row">
+        <button class="btn btn-ghost" id="ptt-btn"><i class="bi bi-mic-fill"></i> 按住说话</button>
+        <span id="ptt-hint" style="font-size:11px;color:var(--text-muted)">松开发送</span>
+        <div class="vad-sep"></div>
+        <button class="btn btn-ghost" id="vad-toggle"><i class="bi bi-mic"></i> 持续对话</button>
+        <div class="slider-wrap">
+          <span>静音</span>
+          <input type="range" id="vad-silence" min="5" max="40" value="15" style="width:64px">
+          <span id="vad-silence-val">1.5s</span>
+        </div>
+        <div class="slider-wrap">
+          <span>灵敏度</span>
+          <input type="range" id="vad-threshold" min="1" max="30" value="8" style="width:64px">
+          <span id="vad-threshold-val">8</span>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    <!-- 隐藏的会话ID -->
-    <input type="hidden" id="sessionid" value="0">
+  <!-- 朗读模式 -->
+  <div class="tab-pane" id="pane-tts">
+    <div class="tts-pane">
+      <label>输入要朗读的文本</label>
+      <textarea id="message" rows="5" placeholder="输入您想让数字人朗读的文字…"></textarea>
+      <button class="btn btn-primary" id="echo-submit"><i class="bi bi-volume-up"></i> 朗读文本</button>
+    </div>
+  </div>
 
+  <!-- 监听模式 -->
+  <div class="tab-pane" id="pane-monitor">
+    <div class="monitor-pane">
+      <div class="monitor-toolbar">
+        <input type="text" id="monitor-keywords" placeholder="关键词，逗号分隔，如：地震,火灾,紧急">
+        <button class="btn btn-ghost btn-sm" id="monitor-toggle"><i class="bi bi-ear"></i> 开始监听</button>
+        <button class="btn btn-ghost btn-sm" id="monitor-clear"><i class="bi bi-trash"></i> 清空</button>
+      </div>
+      <div class="monitor-savepath">
+        <label>保存路径：</label>
+        <input type="text" id="monitor-savedir" placeholder="服务器绝对路径，留空则用 ./monitor_clips">
+        <label style="margin-left:8px;white-space:nowrap">前后窗口：</label>
+        <input type="number" id="monitor-window" value="60" min="10" max="600"
+          style="width:64px;text-align:center">
+        <label>秒</label>
+      </div>
+      <div class="monitor-statusbar">
+        <div class="stat-item">
+          <div class="mic-dot" id="mic-dot"></div>
+          <span id="mic-status">未开启</span>
+        </div>
+        <div class="stat-item">
+          <i class="bi bi-file-text" style="font-size:11px"></i>
+          <span id="monitor-count">0 条记录</span>
+        </div>
+        <div class="stat-item" id="kw-alert" style="display:none;color:var(--danger)">
+          <i class="bi bi-flag-fill" style="font-size:11px"></i>
+          <span id="kw-alert-text">检测到关键词，收集中…</span>
+        </div>
+      </div>
+      <div class="monitor-scroll" id="monitor-scroll">
+        <div style="color:var(--text-muted);font-size:13px;text-align:center;padding-top:24px">
+          开启监听后，转写内容将显示在这里
+        </div>
+      </div>
+      <div class="saved-clips" id="saved-clips-wrap" style="display:none">
+        <div class="saved-clips-title">已保存片段（点击复制文字）</div>
+        <div id="saved-clips-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
 
-    <script src="client.js"></script>
-    <script src="srs.sdk.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script>
-        $(document).ready(function() {
-            $('#video-size-slider').on('input', function() {
-                const value = $(this).val();
-                $('#video-size-value').text(value + '%');
-                $('#video').css('width', value + '%');
-            });
-            function updateConnectionStatus(status) {
-                const statusIndicator = $('#connection-status');
-                const statusText = $('#status-text');
-                
-                statusIndicator.removeClass('status-connected status-disconnected status-connecting');
-                
-                switch(status) {
-                    case 'connected':
-                        statusIndicator.addClass('status-connected');
-                        statusText.text('已连接');
-                        break;
-                    case 'connecting':
-                        statusIndicator.addClass('status-connecting');
-                        statusText.text('连接中...');
-                        break;
-                    case 'disconnected':
-                    default:
-                        statusIndicator.addClass('status-disconnected');
-                        statusText.text('未连接');
-                        break;
-                }
-            }
+<input type="hidden" id="sessionid" value="0">
 
-            // 添加聊天消息
-            function addChatMessage(message, type = 'user') {
-                const messagesContainer = $('#chat-messages');
-                const messageClass = type === 'user' ? 'user-message' : 'system-message';
-                const sender = type === 'user' ? '您' : '数字人';
-                
-                const messageElement = $(`
-                    <div class="asr-text ${messageClass}">
-                        ${sender}: ${message}
-                    </div>
-                `);
-                
-                messagesContainer.append(messageElement);
-                messagesContainer.scrollTop(messagesContainer[0].scrollHeight);
-            }
+<script src="client.js"></script>
+<script src="srs.sdk.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+// ═══════════════════════════════════════════════
+// 全局工具（放在 ready 外，供 HTML 事件直接调用）
+// ═══════════════════════════════════════════════
+function sid() { return String(document.getElementById('sessionid').value); }
 
-            // 开始/停止按钮
-            $('#start').click(function() {
-                updateConnectionStatus('connecting');
-                start();
-                $(this).hide();
-                $('#stop').show();
-                
-                // 添加定时器检查视频流是否已加载
-                let connectionCheckTimer = setInterval(function() {
-                    const video = document.getElementById('video');
-                    // 检查视频是否有数据
-                    if (video.readyState >= 3 && video.videoWidth > 0) {
-                        updateConnectionStatus('connected');
-                        clearInterval(connectionCheckTimer);
-                    }
-                }, 2000); // 每2秒检查一次
-                
-                // 60秒后如果还是连接中状态，就停止检查
-                setTimeout(function() {
-                    if (connectionCheckTimer) {
-                        clearInterval(connectionCheckTimer);
-                    }
-                }, 60000);
-            });
+function addMsg(text, type) {
+  const cls = type === 'user' ? 'msg-user' : 'msg-system';
+  const el = document.createElement('div');
+  el.className = 'msg ' + cls;
+  el.textContent = text;
+  const c = document.getElementById('chat-messages');
+  c.appendChild(el);
+  c.scrollTop = c.scrollHeight;
+}
 
-            $('#stop').click(function() {
-                stop();
-                $(this).hide();
-                $('#start').show();
-                updateConnectionStatus('disconnected');
-            });
+// 上传 webm chunks → /humanaudio → 回调识别文字
+function uploadAudio(chunks, onDone) {
+  const blob = new Blob(chunks, { type: 'audio/webm' });
+  if (blob.size < 800) { if (onDone) onDone(null); return; }
+  const fd = new FormData();
+  fd.append('file', blob, 'audio.webm');
+  fd.append('sessionid', sid());
+  fetch('/humanaudio', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(data => {
+      const text = (data.code === 0 && data.data && data.data.recognized)
+        ? data.data.recognized : null;
+      if (onDone) onDone(text);
+    })
+    .catch(() => { if (onDone) onDone(null); });
+}
 
-            // 录制功能
-            $('#btn_start_record').click(function() {
-                console.log('Starting recording...');
-                fetch('/record', {
-                    body: JSON.stringify({
-                        type: 'start_record',
-                        sessionid: String(document.getElementById('sessionid').value),
-                    }),
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    method: 'POST'
-                }).then(function(response) {
-                    if (response.ok) {
-                        console.log('Recording started.');
-                        $('#btn_start_record').prop('disabled', true);
-                        $('#btn_stop_record').prop('disabled', false);
-                        $('#recording-indicator').addClass('active');
-                    } else {
-                        console.error('Failed to start recording.');
-                    }
-                }).catch(function(error) {
-                    console.error('Error:', error);
-                });
-            });
+// ═══════════════════════════════════════════════
+// PTT（按住说话）— 全局，避免 jQuery ready 内部作用域问题
+// ═══════════════════════════════════════════════
+let pttRecorder = null, pttChunks = [], pttStream = null;
 
-            $('#btn_stop_record').click(function() {
-                console.log('Stopping recording...');
-                fetch('/record', {
-                    body: JSON.stringify({
-                        type: 'end_record',
-                        sessionid: String(document.getElementById('sessionid').value),
-                    }),
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    method: 'POST'
-                }).then(function(response) {
-                    if (response.ok) {
-                        console.log('Recording stopped.');
-                        $('#btn_start_record').prop('disabled', false);
-                        $('#btn_stop_record').prop('disabled', true);
-                        $('#recording-indicator').removeClass('active');
-                    } else {
-                        console.error('Failed to stop recording.');
-                    }
-                }).catch(function(error) {
-                    console.error('Error:', error);
-                });
-            });
+function startPTT() {
+  if (pttRecorder) return;
+  navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+    .then(function(stream) {
+      pttStream   = stream;
+      pttChunks   = [];
+      pttRecorder = new MediaRecorder(stream);
+      pttRecorder.ondataavailable = function(e) {
+        if (e.data.size > 0) pttChunks.push(e.data);
+      };
+      pttRecorder.start();
+      const btn = document.getElementById('ptt-btn');
+      btn.classList.add('recording');
+      btn.innerHTML = '<i class="bi bi-mic-fill"></i> 录音中…';
+      document.getElementById('ptt-hint').textContent = '松开后上传识别';
+    })
+    .catch(function(err) {
+      console.error('麦克风权限被拒绝:', err);
+      addMsg('无法访问麦克风，请检查浏览器权限。', 'system');
+    });
+}
 
-            $('#echo-form').on('submit', function(e) {
-                e.preventDefault();
-                var message = $('#message').val();
-                if (!message.trim()) return;
-                
-                console.log('Sending echo message:', message);
-                
-                fetch('/human', {
-                    body: JSON.stringify({
-                        text: message,
-                        type: 'echo',
-                        interrupt: true,
-                        sessionid: String(document.getElementById('sessionid').value),
-                    }),
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    method: 'POST'
-                });
-                
-                $('#message').val('');
-                addChatMessage(`已发送朗读请求: "${message}"`, 'system');
-            });
+function stopPTT() {
+  if (!pttRecorder || pttRecorder.state === 'inactive') return;
 
-            // 聊天模式表单提交
-            $('#chat-form').on('submit', function(e) {
-                e.preventDefault();
-                var message = $('#chat-message').val();
-                if (!message.trim()) return;
-                
-                console.log('Sending chat message:', message);
-                
-                fetch('/human', {
-                    body: JSON.stringify({
-                        text: message,
-                        type: 'chat',
-                        interrupt: true,
-                        sessionid: String(document.getElementById('sessionid').value),
-                    }),
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    method: 'POST'
-                });
-                
-                addChatMessage(message, 'user');
-                $('#chat-message').val('');
-            });
+  // 先把引用存下来，再清空全局变量
+  const recorder = pttRecorder;
+  const stream   = pttStream;
+  pttRecorder = null;
+  pttStream   = null;
 
-            // 按住说话功能
-            let mediaRecorder;
-            let audioChunks = [];
-            let isRecording = false;
-            let recognition;
-            
-            // 检查浏览器是否支持语音识别
-            const isSpeechRecognitionSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
-            
-            if (isSpeechRecognitionSupported) {
-                recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-                recognition.continuous = true;
-                recognition.interimResults = true;
-                recognition.lang = 'zh-CN';
-                
-                recognition.onresult = function(event) {
-                    let interimTranscript = '';
-                    let finalTranscript = '';
-                    
-                    for (let i = event.resultIndex; i < event.results.length; ++i) {
-                        if (event.results[i].isFinal) {
-                            finalTranscript += event.results[i][0].transcript;
-                        } else {
-                            interimTranscript += event.results[i][0].transcript;
-                            $('#chat-message').val(interimTranscript);
-                        }
-                    }
-                    
-                    if (finalTranscript) {
-                        $('#chat-message').val(finalTranscript);
-                    }
-                };
-                
-                recognition.onerror = function(event) {
-                    console.error('语音识别错误:', event.error);
-                };
-            }
-            
-            // 按住说话按钮事件
-            $('#voice-record-btn').on('mousedown touchstart', function(e) {
-                e.preventDefault();
-                startRecording();
-            }).on('mouseup mouseleave touchend', function() {
-                if (isRecording) {
-                    stopRecording();
-                }
-            });
-            
-            // 开始录音
-            function startRecording() {
-                if (isRecording) return;
-                
-                navigator.mediaDevices.getUserMedia({ audio: true })
-                    .then(function(stream) {
-                        audioChunks = [];
-                        mediaRecorder = new MediaRecorder(stream);
-                        
-                        mediaRecorder.ondataavailable = function(e) {
-                            if (e.data.size > 0) {
-                                audioChunks.push(e.data);
-                            }
-                        };
-                        
-                        mediaRecorder.start();
-                        isRecording = true;
-                        
-                        $('#voice-record-btn').addClass('recording-pulse');
-                        $('#voice-record-btn').css('background-color', '#dc3545');
-                        
-                        if (recognition) {
-                            recognition.start();
-                        }
-                    })
-                    .catch(function(error) {
-                        console.error('无法访问麦克风:', error);
-                        alert('无法访问麦克风，请检查浏览器权限设置。');
-                    });
-            }
+  // 先设好 onstop，再调 stop()
+  recorder.onstop = function() {
+    const captured = pttChunks.slice();   // 在这里取，数据已完整
+    stream.getTracks().forEach(t => t.stop());
+    uploadAudio(captured, function(text) {
+      if (text) addMsg(text, 'user');
+    });
+  };
 
-            function stopRecording() {
-                if (!isRecording) return;
-                
-                mediaRecorder.stop();
-                isRecording = false;
-                
-                // 停止所有音轨
-                mediaRecorder.stream.getTracks().forEach(track => track.stop());
-                
-                // 视觉反馈恢复
-                $('#voice-record-btn').removeClass('recording-pulse');
-                $('#voice-record-btn').css('background-color', '');
-                
-                // 停止语音识别
-                if (recognition) {
-                    recognition.stop();
-                }
-                
-                // 获取识别的文本并发送
-                setTimeout(function() {
-                    const recognizedText = $('#chat-message').val().trim();
-                    if (recognizedText) {
-                        // 发送识别的文本
-                        fetch('/human', {
-                            body: JSON.stringify({
-                                text: recognizedText,
-                                type: 'chat',
-                                interrupt: true,
-                                sessionid: String(document.getElementById('sessionid').value),
-                            }),
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            method: 'POST'
-                        });
-                        
-                        addChatMessage(recognizedText, 'user');
-                        $('#chat-message').val('');
-                    }
-                }, 500); 
-            }
+  recorder.stop();  // stop 在 onstop 设好之后才调
 
-            // WebRTC 相关功能
-            if (typeof window.onWebRTCConnected === 'function') {
-                const originalOnConnected = window.onWebRTCConnected;
-                window.onWebRTCConnected = function() {
-                    updateConnectionStatus('connected');
-                    if (originalOnConnected) originalOnConnected();
-                };
-            } else {
-                window.onWebRTCConnected = function() {
-                    updateConnectionStatus('connected');
-                };
-            }
+  const btn = document.getElementById('ptt-btn');
+  btn.classList.remove('recording');
+  btn.innerHTML = '<i class="bi bi-mic-fill"></i> 按住说话';
+  document.getElementById('ptt-hint').textContent = '松开发送';
+}
 
-            // 当连接断开时更新状态
-            if (typeof window.onWebRTCDisconnected === 'function') {
-                const originalOnDisconnected = window.onWebRTCDisconnected;
-                window.onWebRTCDisconnected = function() {
-                    updateConnectionStatus('disconnected');
-                    if (originalOnDisconnected) originalOnDisconnected();
-                };
-            } else {
-                window.onWebRTCDisconnected = function() {
-                    updateConnectionStatus('disconnected');
-                };
-            }
+// ═══════════════════════════════════════════════
+// jQuery 主逻辑
+// ═══════════════════════════════════════════════
+$(document).ready(function () {
 
-            // SRS WebRTC播放功能
-            var sdk = null; // 全局处理器，用于在重新发布时进行清理
+  // ── 连接状态
+  function setStatus(s) {
+    $('#connection-status').removeClass('connected connecting').addClass(s === 'disconnected' ? '' : s);
+    $('#status-text').text({ connected:'已连接', connecting:'连接中…', disconnected:'未连接' }[s] || '未连接');
+  }
+  $('#start').click(function () {
+    setStatus('connecting'); start(); $(this).hide(); $('#stop').show();
+    let t = setInterval(() => {
+      const v = document.getElementById('video');
+      if (v.readyState >= 3 && v.videoWidth > 0) { setStatus('connected'); clearInterval(t); }
+    }, 2000);
+    setTimeout(() => clearInterval(t), 60000);
+  });
+  $('#stop').click(function () { stop(); $(this).hide(); $('#start').show(); setStatus('disconnected'); });
+  window.onWebRTCConnected    = () => setStatus('connected');
+  window.onWebRTCDisconnected = () => setStatus('disconnected');
 
-            function startPlay() {
-                // 关闭之前的连接
-                if (sdk) {
-                    sdk.close();
-                }
-                
-                sdk = new SrsRtcWhipWhepAsync();
-                $('#video').prop('srcObject', sdk.stream);
-                
-                var host = window.location.hostname;
-                var url = "http://" + host + ":1985/rtc/v1/whep/?app=live&stream=livestream";
-                
-                sdk.play(url).then(function(session) {
-                    console.log('WebRTC播放已启动，会话ID:', session.sessionid);
-                }).catch(function(reason) {
-                    sdk.close();
-                    console.error('WebRTC播放失败:', reason);
-                });
-            }
+  // ── 录制
+  $('#btn_start_record').click(function () {
+    fetch('/record', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ type:'start_record', sessionid:sid() }) })
+    .then(r => { if(r.ok) { $(this).prop('disabled',true); $('#btn_stop_record').prop('disabled',false); $('#recording-indicator').addClass('active'); }});
+  });
+  $('#btn_stop_record').click(function () {
+    fetch('/record', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ type:'end_record', sessionid:sid() }) })
+    .then(r => { if(r.ok) { $(this).prop('disabled',true); $('#btn_start_record').prop('disabled',false); $('#recording-indicator').removeClass('active'); }});
+  });
+
+  // ── Tabs
+  $('.tab-btn').click(function () {
+    $('.tab-btn').removeClass('active'); $('.tab-pane').removeClass('active');
+    $(this).addClass('active');
+    $('#pane-' + $(this).data('tab')).addClass('active');
+    if ($(this).data('tab') !== 'chat'    && vadActive)     stopVAD();
+    if ($(this).data('tab') !== 'monitor' && monitorActive) stopMonitor();
+  });
+
+  // ── 打断
+  $('#interrupt-btn').click(() =>
+    fetch('/interrupt_talk', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ sessionid:sid() }) })
+  );
+
+  // ── 文字发送
+  function sendChat(text) {
+    if (!text.trim()) return;
+    fetch('/human', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ text, type:'chat', interrupt:true, sessionid:sid() }) });
+    addMsg(text, 'user');
+    $('#chat-message').val('');
+  }
+  $('#chat-send').click(() => sendChat($('#chat-message').val()));
+  $('#chat-message').on('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat($(this).val()); }
+  });
+
+  // ── 朗读
+  $('#echo-submit').click(function () {
+    const text = $('#message').val().trim(); if (!text) return;
+    fetch('/human', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ text, type:'echo', interrupt:true, sessionid:sid() }) });
+  });
+
+  // ── PTT 绑定（jQuery，避免 onmousedown 内联写法）
+  $('#ptt-btn')
+    .on('mousedown touchstart', function(e) { e.preventDefault(); startPTT(); })
+    .on('mouseup mouseleave touchend', function() { stopPTT(); });
+
+  // ═══════════════════════════════════════════════
+  // VAD 持续对话
+  // ═══════════════════════════════════════════════
+  let vadActive=false, vadStream=null, vadAudioCtx=null, vadAnalyser=null;
+  let vadInterval=null, vadRecorder=null, vadChunks=[];
+  let isSpeaking_vad=false, silenceTimer=null, speechStart=0;
+  const vadBars = [0,1,2,3,4,5,6,7].map(i => document.getElementById('b'+i));
+
+  function getVadThreshold()   { return parseInt($('#vad-threshold').val()) / 1000; }
+  function getSilenceDuration(){ return parseInt($('#vad-silence').val()) * 100; }
+
+  $('#vad-threshold').on('input', function(){ $('#vad-threshold-val').text($(this).val()); });
+  $('#vad-silence').on('input', function(){
+    $('#vad-silence-val').text((parseInt($(this).val())/10).toFixed(1)+'s');
+  });
+
+  function startVAD() {
+    navigator.mediaDevices.getUserMedia({ audio:true, video:false })
+    .then(stream => {
+      vadStream = stream;
+      vadAudioCtx = new AudioContext();
+      vadAnalyser = vadAudioCtx.createAnalyser();
+      vadAnalyser.fftSize = 256;
+      vadAudioCtx.createMediaStreamSource(stream).connect(vadAnalyser);
+      vadActive = true;
+      $('#vad-toggle').addClass('active').html('<i class="bi bi-mic-fill"></i> 关闭持续对话');
+      $('#vad-badge').show().text('监听中').removeClass('speaking');
+      $('#vad-bars').addClass('active');
+
+      const buf = new Float32Array(vadAnalyser.fftSize);
+      vadInterval = setInterval(() => {
+        vadAnalyser.getFloatTimeDomainData(buf);
+        const rms = Math.sqrt(buf.reduce((s,v) => s+v*v, 0) / buf.length);
+        const norm = Math.min(rms / 0.05, 1);
+        vadBars.forEach(b => {
+          if (b) b.style.height = Math.max(4, Math.random()*norm*20 + (norm>0.05?4:0)) + 'px';
         });
-    </script>
+        if (rms > getVadThreshold()) {
+          if (!isSpeaking_vad) {
+            isSpeaking_vad = true; speechStart = Date.now(); vadChunks = [];
+            vadRecorder = new MediaRecorder(stream);
+            vadRecorder.ondataavailable = e => { if(e.data.size>0) vadChunks.push(e.data); };
+            vadRecorder.start(100);
+            $('#vad-badge').text('说话中…').addClass('speaking');
+          }
+          clearTimeout(silenceTimer);
+          silenceTimer = setTimeout(() => endVADUtterance(), getSilenceDuration());
+        }
+      }, 80);
+    })
+    .catch(err => { console.error(err); addMsg('无法访问麦克风。', 'system'); });
+  }
+
+  function endVADUtterance() {
+    if (!isSpeaking_vad || !vadRecorder) return;
+    isSpeaking_vad = false;
+    $('#vad-badge').text('监听中').removeClass('speaking');
+    vadRecorder.stop();
+    const dur = Date.now() - speechStart;
+    const captured = vadChunks.slice();
+    vadRecorder.onstop = () => {
+      if (dur < 400) return;
+      uploadAudio(captured, text => { if (text) addMsg(text, 'user'); });
+    };
+  }
+
+  function stopVAD() {
+    vadActive = false;
+    clearInterval(vadInterval); clearTimeout(silenceTimer);
+    if (vadRecorder && vadRecorder.state !== 'inactive') vadRecorder.stop();
+    if (vadStream) vadStream.getTracks().forEach(t => t.stop());
+    if (vadAudioCtx) vadAudioCtx.close();
+    vadStream = vadAudioCtx = vadAnalyser = vadRecorder = null;
+    isSpeaking_vad = false;
+    $('#vad-toggle').removeClass('active').html('<i class="bi bi-mic"></i> 持续对话');
+    $('#vad-badge').hide();
+    $('#vad-bars').removeClass('active');
+    vadBars.forEach(b => { if(b) b.style.height='4px'; });
+  }
+
+  $('#vad-toggle').click(() => vadActive ? stopVAD() : startVAD());
+
+  // ═══════════════════════════════════════════════
+  // 监听模式
+  // ═══════════════════════════════════════════════
+  let monitorActive=false, monitorStream=null, monitorAudioCtx=null, monitorAnalyser=null;
+  let monitorInterval=null, monitorRecorder=null, monitorChunks=[];
+  let monitorSpeaking=false, monitorSilTimer=null, monitorSpeechStart=0;
+  let monitorEntryCount=0;
+  let monitorBuffer = [];
+  let kwDetected=null, kwPostCollecting=false, kwPostTimer=null;
+
+  function getKeywords() {
+    return $('#monitor-keywords').val().split(',').map(s=>s.trim()).filter(Boolean);
+  }
+  function getSaveDir() {
+    return $('#monitor-savedir').val().trim() || './monitor_clips';
+  }
+  function getWindow() {
+    return (parseInt($('#monitor-window').val()) || 60) * 1000;
+  }
+  function setMicStatus(state) {
+    const dot = document.getElementById('mic-dot');
+    dot.className = 'mic-dot' + (state === 'active' ? ' active' : state === 'speaking' ? ' speaking' : '');
+    $('#mic-status').text({ active:'监听中，等待声音…', speaking:'检测到声音', off:'未开启' }[state] || '未开启');
+  }
+
+  // 统一时间戳格式：年-月-日 时:分:秒
+  function fmtTime(ts) {
+    const d = new Date(ts);
+    const pad = n => String(n).padStart(2,'0');
+    return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate())
+      + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+  }
+
+  function addMonitorEntry(text) {
+    const ts = Date.now();
+    const W  = getWindow();
+    monitorEntryCount++;
+    $('#monitor-count').text(monitorEntryCount + ' 条记录');
+    if (monitorEntryCount === 1) {
+      document.getElementById('monitor-scroll').innerHTML = '';
+    }
+
+    monitorBuffer.push({ text, ts });
+    monitorBuffer = monitorBuffer.filter(e => e.ts >= ts - W * 2);
+
+    const kws   = getKeywords();
+    const hitKw = kws.find(k => text.includes(k));
+    const timeStr = fmtTime(ts);
+    const el = $('<div class="monitor-entry"></div>')
+      .toggleClass('highlight', !!hitKw)
+      .append($('<span class="monitor-entry-time"></span>').text(timeStr))
+      .append($('<span></span>').text(text));
+    $('#monitor-scroll').append(el);
+    const s = document.getElementById('monitor-scroll');
+    s.scrollTop = s.scrollHeight;
+    const entries = $('#monitor-scroll .monitor-entry');
+    if (entries.length > 200) entries.first().remove();
+
+    // 追加到服务器滚动日志
+    fetch('/append_monitor_log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ save_dir: getSaveDir(), text: '[' + timeStr + '] ' + text })
+    }).catch(() => {});
+
+    // 关键词检测
+    if (hitKw && !kwPostCollecting) {
+      kwPostCollecting = true;
+      kwDetected = {
+        keyword: hitKw, ts, W,
+        preEntries: [...monitorBuffer.filter(e => e.ts >= ts - W && e.ts <= ts)]
+      };
+      $('#kw-alert').show();
+      $('#kw-alert-text').text('检测到"' + hitKw + '"，收集后续' + (W/1000) + 's…');
+      kwPostTimer = setTimeout(finalizeClip, W);
+    }
+  }
+
+  function finalizeClip() {
+    if (!kwDetected) return;
+    kwPostCollecting = false;
+    $('#kw-alert').hide();
+    const { keyword, ts, W, preEntries } = kwDetected;
+    const postEntries = monitorBuffer.filter(e => e.ts > ts && e.ts <= ts + W);
+    const clipText = [...preEntries, ...postEntries]
+      .map(e => '[' + fmtTime(e.ts) + '] ' + e.text)
+      .join('\n');
+    saveClipToServer(keyword, clipText, ts);
+    kwDetected = null;
+  }
+
+  function saveClipToServer(keyword, text, ts) {
+    // 文件名示例：clip_火灾_2026-05-01_14-32-10.txt
+    const filename = 'clip_' + keyword + '_' + fmtTime(ts).replace(/[: ]/g,'-') + '.txt';
+    fetch('/save_monitor_clip', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ save_dir: getSaveDir(), filename, content: text })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.code === 0) addClipToUI(keyword, text, data.data.saved_to);
+      else addMsg('片段保存失败：' + data.msg, 'system');
+    })
+    .catch(() => addMsg('保存接口请求失败', 'system'));
+  }
+
+  function addClipToUI(keyword, text, savedPath) {
+    $('#saved-clips-wrap').show();
+    const preview = text.substring(0, 100) + (text.length > 100 ? '…' : '');
+    const el = $('<div class="clip-item"></div>')
+      .append(
+        $('<div style="flex:1;min-width:0"></div>')
+          .append($('<div class="clip-keyword"></div>').text('关键词: ' + keyword))
+          .append($('<div class="clip-preview"></div>').text(preview))
+          .append($('<div class="clip-path"></div>').text('已保存: ' + savedPath))
+      )
+      .append(
+        $('<button class="btn btn-ghost btn-sm" style="flex-shrink:0"></button>').text('复制')
+          .click(() => navigator.clipboard.writeText(text)
+            .then(() => addMsg('已复制到剪贴板', 'system')))
+      );
+    $('#saved-clips-list').prepend(el);
+  }
+
+  function uploadMonitorAudio(chunks) {
+    const blob = new Blob(chunks, { type:'audio/webm' });
+    if (blob.size < 800) return;
+    const fd = new FormData();
+    fd.append('file', blob, 'audio.webm');
+    fd.append('sessionid', sid());
+    fetch('/humanaudio_monitor', { method:'POST', body:fd })
+      .then(r => r.json())
+      .then(data => {
+        if (data.code === 0 && data.data && data.data.recognized)
+          addMonitorEntry(data.data.recognized);
+      }).catch(() => {});
+  }
+
+  function startMonitor() {
+    navigator.mediaDevices.getUserMedia({ audio:true, video:false })
+    .then(stream => {
+      monitorStream = stream;
+      monitorAudioCtx = new AudioContext();
+      monitorAnalyser = monitorAudioCtx.createAnalyser();
+      monitorAnalyser.fftSize = 256;
+      monitorAudioCtx.createMediaStreamSource(stream).connect(monitorAnalyser);
+      monitorActive = true; monitorEntryCount = 0; $('#monitor-count').text('0 条记录');
+      $('#monitor-toggle').addClass('btn-danger').removeClass('btn-ghost')
+        .html('<i class="bi bi-stop-fill"></i> 停止监听');
+      setMicStatus('active');
+
+      const buf = new Float32Array(monitorAnalyser.fftSize);
+      monitorInterval = setInterval(() => {
+        monitorAnalyser.getFloatTimeDomainData(buf);
+        const rms = Math.sqrt(buf.reduce((s,v)=>s+v*v,0)/buf.length);
+        if (rms > 0.008) {
+          if (!monitorSpeaking) {
+            monitorSpeaking = true; monitorSpeechStart = Date.now(); monitorChunks = [];
+            monitorRecorder = new MediaRecorder(stream);
+            monitorRecorder.ondataavailable = e => { if(e.data.size>0) monitorChunks.push(e.data); };
+            monitorRecorder.start(100);
+            setMicStatus('speaking');
+          }
+          clearTimeout(monitorSilTimer);
+          monitorSilTimer = setTimeout(endMonitorUtterance, 1500);
+        }
+      }, 80);
+    })
+    .catch(err => { console.error(err); addMsg('无法访问麦克风。', 'system'); });
+  }
+
+  function endMonitorUtterance() {
+    if (!monitorSpeaking || !monitorRecorder) return;
+    monitorSpeaking = false;
+    setMicStatus('active');
+    monitorRecorder.stop();
+    const dur = Date.now() - monitorSpeechStart;
+    const captured = monitorChunks.slice();
+    monitorRecorder.onstop = () => { if (dur >= 400) uploadMonitorAudio(captured); };
+  }
+
+  function stopMonitor() {
+    monitorActive = false;
+    clearInterval(monitorInterval); clearTimeout(monitorSilTimer); clearTimeout(kwPostTimer);
+    if (monitorRecorder && monitorRecorder.state !== 'inactive') monitorRecorder.stop();
+    if (monitorStream) monitorStream.getTracks().forEach(t => t.stop());
+    if (monitorAudioCtx) monitorAudioCtx.close();
+    monitorStream = monitorAudioCtx = monitorAnalyser = monitorRecorder = null;
+    monitorSpeaking = false; kwPostCollecting = false; kwDetected = null;
+    $('#monitor-toggle').removeClass('btn-danger').addClass('btn-ghost')
+      .html('<i class="bi bi-ear"></i> 开始监听');
+    $('#kw-alert').hide();
+    setMicStatus('off');
+  }
+
+  $('#monitor-toggle').click(() => monitorActive ? stopMonitor() : startMonitor());
+  $('#monitor-clear').click(() => {
+    $('#monitor-scroll').html('<div style="color:var(--text-muted);font-size:13px;text-align:center;padding-top:24px">开启监听后，转写内容将显示在这里</div>');
+    monitorBuffer = []; monitorEntryCount = 0; $('#monitor-count').text('0 条记录');
+  });
+
+  window.addEventListener('beforeunload', () => {
+    if (vadActive) stopVAD();
+    if (monitorActive) stopMonitor();
+  });
+});
+</script>
 </body>
 </html>

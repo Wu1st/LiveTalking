@@ -53,6 +53,7 @@ from utils.logger import logger
 import copy
 import gc
 
+import qwen3asr_service as asr_svc
 
 app = Flask(__name__)
 #sockets = Sockets(app)
@@ -176,6 +177,10 @@ def main():
         pagename='rtmpapi.html'
     elif opt.transport=='rtcpush':
         pagename='rtcpushapi.html'
+    logger.info("预加载 Qwen3-ASR 模型...")
+    import qwen3asr_service as asr_svc
+    asr_svc.get_model()
+    logger.info("Qwen3-ASR 模型加载完成")
     logger.info('start http server; http://<serverip>:'+str(opt.listenport)+'/'+pagename)
     logger.info('如果使用webrtc，推荐访问webrtc集成前端: http://<serverip>:'+str(opt.listenport)+'/dashboard.html')
     def run_server(runner):

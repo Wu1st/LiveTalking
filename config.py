@@ -44,9 +44,11 @@ def parse_args():
                         help="custom action json")
 
     # ─── TTS ───────────────────────────────────────────────────────────
+    parser.add_argument('--TTS_LANG', type=str, default='zh/en/ja/ko',
+                        help='TTS语言: zh/en/ja/ko/de/fr/es/it/ru')
     parser.add_argument('--tts', type=str, default='edgetts',
                         help="tts plugin: edgetts/gpt-sovits/cosyvoice/fishtts/tencent/doubao/indextts2/azuretts/qwentts")
-    parser.add_argument('--REF_FILE', type=str, default="zh-CN-YunxiaNeural",
+    parser.add_argument('--REF_FILE', type=str, default="/home/wuguinan/LiveTalking/tts/录音机-20260502-1545.wav",
                         help="参考文件名或语音模型ID")
     parser.add_argument('--REF_TEXT', type=str, default=None)
     parser.add_argument('--TTS_SERVER', type=str, default='http://127.0.0.1:9880')

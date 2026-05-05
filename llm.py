@@ -9,6 +9,13 @@ from utils.logger import logger
 # key: sessionid (str), value: list of {"role": ..., "content": ...}
 _conversation_history: Dict[str, List[dict]] = {}
 
+# 存储每个 session 最新的完整 LLM 回复，供前端轮询
+_pending_replies: Dict[str, str] = {}
+
+def get_pending_reply(sessionid: str) -> str:
+    """取出并清空该 session 的待显示回复，取完即删"""
+    return _pending_replies.pop(sessionid, '')
+
 # ── 可配置参数 ────────────────────────────────────────────────
 MAX_HISTORY_TURNS   = 10    # 最多保留几轮对话（1轮 = user + assistant）
 MAX_HISTORY_CHARS   = 3000  # 历史内容字符总数上限，超出则从最早一轮开始删除
@@ -128,6 +135,7 @@ def llm_response(message, avatar_session: 'BaseAvatar', datainfo: dict = {}):
             history.append({'role': 'assistant', 'content': full_reply})
             trim_history(history)
             logger.info(f"History updated | session={sessionid} | 现有{len(history)//2}轮")
+            _pending_replies[sessionid] = full_reply  # 存给前端轮询
 
     except Exception as e:
         logger.exception('llm exception:')

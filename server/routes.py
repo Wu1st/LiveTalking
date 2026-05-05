@@ -2,9 +2,11 @@
 #  服务器路由 — 统一异常处理的 API 路由
 ###############################################################################
 
+import time
 import json
 import numpy as np
 import asyncio
+import subprocess
 from aiohttp import web
 
 from utils.logger import logger
@@ -116,6 +118,8 @@ async def humanaudio(request):
     """上传音频 → ASR识别 → LLM对话"""
     try:
         form = await request.post()
+        t0 = time.perf_counter()
+
         sessionid = str(form.get('sessionid', ''))
         fileobj = form["file"]
         filebytes = fileobj.file.read()
@@ -135,23 +139,31 @@ async def humanaudio(request):
         tmp_path = raw_path.replace('.webm', '.wav')
         try:
             subprocess.run(
-                ["ffmpeg", "-y", "-i", raw_path,
-                "-ar", "16000", "-ac", "1", "-f", "wav", tmp_path],
+                ["ffmpeg", "-y", "-i", raw_path, "-ar", "16000", "-ac", "1", "-f", "wav", tmp_path],
                 check=True, capture_output=True
             )
-        finally:
-            os.unlink(raw_path)
+            t1 = time.perf_counter()
 
-        try:
-            # 在线程池执行，避免阻塞 aiohttp 事件循环
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             recognized_text = await loop.run_in_executor(
                 None, asr_svc.transcribe, tmp_path
             )
+            t2 = time.perf_counter()
+
+            result = subprocess.run(
+                ['ffprobe', '-v', 'quiet', '-print_format', 'json',
+                 '-show_streams', tmp_path],
+                capture_output=True, text=True
+            )
+            dur = float(json.loads(result.stdout)['streams'][0]['duration'])
+
         finally:
-            os.unlink(tmp_path)
+            os.unlink(raw_path)
+            if os.path.exists(tmp_path):
+                os.unlink(tmp_path)
 
         logger.info(f"ASR recognized: {recognized_text}")
+        logger.info(f"LATENCY ffmpeg={t1-t0:.3f}s ASR={t2-t1:.3f}s total_asr={t2-t0:.3f}s audio_dur={dur:.1f}s RTF={((t2-t1)/dur):.2f}")
 
         if not recognized_text:
             return json_error("ASR 识别结果为空")
@@ -262,6 +274,18 @@ async def append_monitor_log(request):
         logger.exception('append_monitor_log exception:')
         return json_error(str(e))
 
+async def get_reply(request):
+    """前端轮询接口：取该 session 最新的 LLM 完整回复，取完即清空"""
+    try:
+        params = await request.json()
+        sessionid = str(params.get('sessionid', '0'))
+        from llm import get_pending_reply
+        text = get_pending_reply(sessionid)
+        return json_ok({"reply": text})
+    except Exception as e:
+        logger.exception('get_reply exception:')
+        return json_error(str(e))
+
 async def set_audiotype(request):
     """设置自定义状态（动作编排）"""
     try:
@@ -314,6 +338,7 @@ def setup_routes(app):
     app.router.add_post("/humanaudio_monitor", humanaudio_monitor)
     app.router.add_post("/save_monitor_clip", save_monitor_clip)
     app.router.add_post("/append_monitor_log", append_monitor_log)
+    app.router.add_post("/get_reply", get_reply)
     app.router.add_post("/set_audiotype", set_audiotype)
     app.router.add_post("/record", record)
     app.router.add_post("/interrupt_talk", interrupt_talk)

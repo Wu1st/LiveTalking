@@ -2,8 +2,9 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LiveTalking 数字人交互平台</title>
+<title>灵听智声——基于多语种 ASR 微调与热词触发的实时数字人</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 <style>
@@ -97,6 +98,7 @@ body {
 .msg { padding:7px 13px; border-radius:10px; font-size:14px; line-height:1.5; max-width:85%; }
 .msg-user   { background:var(--accent); color:#fff; align-self:flex-end; border-bottom-right-radius:3px; }
 .msg-system { background:var(--surface2); color:var(--text-muted); align-self:flex-start; border-bottom-left-radius:3px; font-size:13px; }
+.msg-avatar { background: rgba(76,201,240,0.08); border: 1px solid rgba(76,201,240,0.2); color: var(--text); align-self: flex-start;border-bottom-left-radius: 3px; }
 
 /* 底部固定操作区 */
 .chat-bottom { flex-shrink:0; border-top:1px solid var(--border); }
@@ -235,7 +237,7 @@ input[type=range] { accent-color:var(--accent2); }
 
 <!-- Topbar -->
 <div class="topbar">
-  <div class="topbar-title"><i class="bi bi-person-video2 me-2"></i>LiveTalking</div>
+  <div class="topbar-title"><i class="bi bi-person-video2 me-2"></i>灵听智声 / LiveTalking</div>
   <div class="topbar-controls">
     <span class="status-dot" id="connection-status"></span>
     <span id="status-text">未连接</span>
@@ -252,6 +254,7 @@ input[type=range] { accent-color:var(--accent2); }
 <!-- 视频区 -->
 <div class="video-section">
   <video id="video" autoplay playsinline></video>
+  <audio id="audio" autoplay style="display:none"></audio>
   <div class="video-overlay">
     <div class="overlay-badge badge-rec" id="recording-indicator">录制中</div>
     <div class="overlay-badge badge-vad" id="vad-badge" style="display:none">监听中</div>
@@ -275,7 +278,7 @@ input[type=range] { accent-color:var(--accent2); }
   <!-- 对话模式 -->
   <div class="tab-pane active" id="pane-chat">
     <div class="chat-messages" id="chat-messages">
-      <div class="msg msg-system">欢迎使用 LiveTalking，请点击顶部"连接"按钮开始。</div>
+      <div class="msg msg-system">欢迎使用，请点击顶部"连接"按钮开始。</div>
     </div>
     <div class="chat-bottom">
       <div class="chat-input-row">
@@ -316,13 +319,13 @@ input[type=range] { accent-color:var(--accent2); }
   <div class="tab-pane" id="pane-monitor">
     <div class="monitor-pane">
       <div class="monitor-toolbar">
-        <input type="text" id="monitor-keywords" placeholder="关键词，逗号分隔，如：地震,火灾,紧急">
+        <input type="text" id="monitor-keywords" placeholder="请输入关键词，使用逗号分隔，示例：你好，再见">
         <button class="btn btn-ghost btn-sm" id="monitor-toggle"><i class="bi bi-ear"></i> 开始监听</button>
         <button class="btn btn-ghost btn-sm" id="monitor-clear"><i class="bi bi-trash"></i> 清空</button>
       </div>
       <div class="monitor-savepath">
         <label>保存路径：</label>
-        <input type="text" id="monitor-savedir" placeholder="服务器绝对路径，留空则用 ./monitor_clips">
+        <input type="text" id="monitor-savedir" placeholder="请输入记录保存路径，默认使用 ./monitor_clips">
         <label style="margin-left:8px;white-space:nowrap">前后窗口：</label>
         <input type="number" id="monitor-window" value="60" min="10" max="600"
           style="width:64px;text-align:center">
@@ -357,10 +360,10 @@ input[type=range] { accent-color:var(--accent2); }
 
 <input type="hidden" id="sessionid" value="0">
 
-<script src="client.js"></script>
-<script src="srs.sdk.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="srs.sdk.js"></script>
+<script src="client.js"></script>
 <script>
 // ═══════════════════════════════════════════════
 // 全局工具（放在 ready 外，供 HTML 事件直接调用）
@@ -432,10 +435,13 @@ function stopPTT() {
 
   // 先设好 onstop，再调 stop()
   recorder.onstop = function() {
-    const captured = pttChunks.slice();   // 在这里取，数据已完整
+    const captured = pttChunks.slice();
     stream.getTracks().forEach(t => t.stop());
     uploadAudio(captured, function(text) {
-      if (text) addMsg(text, 'user');
+        if (text) {
+            addMsg(text, 'user');
+            startReplyPolling();
+        }
     });
   };
 
@@ -445,6 +451,30 @@ function stopPTT() {
   btn.classList.remove('recording');
   btn.innerHTML = '<i class="bi bi-mic-fill"></i> 按住说话';
   document.getElementById('ptt-hint').textContent = '松开发送';
+}
+
+let replyPollTimer = null;
+let replyPollCount = 0;
+
+function startReplyPolling() {
+    clearInterval(replyPollTimer);
+    replyPollCount = 0;
+    replyPollTimer = setInterval(function() {
+        replyPollCount++;
+        if (replyPollCount > 120) {   // 最多等 60 秒
+            clearInterval(replyPollTimer);
+            return;
+        }
+        fetch('/get_reply', { method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ sessionid: sid() }) })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.code === 0 && data.data && data.data.reply) {
+                addMsg(data.data.reply, 'avatar');
+                clearInterval(replyPollTimer);
+            }
+        }).catch(function() {});
+    }, 500);
 }
 
 // ═══════════════════════════════════════════════
@@ -503,7 +533,11 @@ $(document).ready(function () {
       body: JSON.stringify({ text, type:'chat', interrupt:true, sessionid:sid() }) });
     addMsg(text, 'user');
     $('#chat-message').val('');
+    startReplyPolling();
   }
+
+
+
   $('#chat-send').click(() => sendChat($('#chat-message').val()));
   $('#chat-message').on('keydown', function (e) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat($(this).val()); }
@@ -583,7 +617,12 @@ $(document).ready(function () {
     const captured = vadChunks.slice();
     vadRecorder.onstop = () => {
       if (dur < 400) return;
-      uploadAudio(captured, text => { if (text) addMsg(text, 'user'); });
+      uploadAudio(captured, text => {
+          if (text) {
+              addMsg(text, 'user');
+              startReplyPolling();   // ← 加这行
+          }
+      });
     };
   }
 

@@ -181,6 +181,16 @@ def main():
     import qwen3asr_service as asr_svc
     asr_svc.get_model()
     logger.info("Qwen3-ASR 模型加载完成")
+    # 预热 CosyVoice speaker embedding 缓存
+    if opt.tts == 'cosyvoice' and opt.REF_FILE:
+        import requests as _req
+        try:
+            with open(opt.REF_FILE, 'rb') as f:
+                _req.post(f"{opt.TTS_SERVER}/preload_speaker",
+                        files={'prompt_wav': f}, timeout=30)
+            logger.info("CosyVoice speaker cache preloaded.")
+        except Exception as e:
+            logger.warning(f"CosyVoice preload failed: {e}")
     logger.info('start http server; http://<serverip>:'+str(opt.listenport)+'/'+pagename)
     logger.info('如果使用webrtc，推荐访问webrtc集成前端: http://<serverip>:'+str(opt.listenport)+'/dashboard.html')
     def run_server(runner):

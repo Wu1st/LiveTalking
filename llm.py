@@ -1,5 +1,6 @@
 import time
 import os
+import threading
 from typing import TYPE_CHECKING, List, Dict
 if TYPE_CHECKING:
     from avatars.base_avatar import BaseAvatar
@@ -20,6 +21,29 @@ def get_pending_reply(sessionid: str) -> str:
 MAX_HISTORY_TURNS   = 10    # 最多保留几轮对话（1轮 = user + assistant）
 MAX_HISTORY_CHARS   = 3000  # 历史内容字符总数上限，超出则从最早一轮开始删除
 DEFAULT_SYSTEM_PROMPT = "你是一个知识助手，尽量以简短、口语化的方式回答问题。"
+
+# ── Ollama OpenAI 兼容客户端 ──────────────────────────────────
+# 客户端内部维护 HTTP 连接池，应在进程内复用，避免每轮对话都重新创建。
+# 使用懒加载可保持模块导入轻量；加锁避免多个会话首次请求时重复初始化。
+_ollama_client = None
+_ollama_client_lock = threading.Lock()
+
+
+def _get_ollama_client():
+    global _ollama_client
+
+    if _ollama_client is None:
+        with _ollama_client_lock:
+            if _ollama_client is None:
+                from openai import OpenAI
+
+                _ollama_client = OpenAI(
+                    api_key='ollama',
+                    base_url='http://113.98.61.52:11434/v1',
+                )
+                logger.info("Ollama OpenAI client initialized")
+
+    return _ollama_client
 
 
 def get_history(sessionid: str) -> List[dict]:
@@ -68,16 +92,7 @@ def llm_response(message, avatar_session: 'BaseAvatar', datainfo: dict = {}):
         history.append({'role': 'user', 'content': message})
 
         start = time.perf_counter()
-        from openai import OpenAI
-        client = OpenAI(
-
-            api_key='ollama', 
-                             
-            base_url='http://113.98.61.52:11434/v1',                        #服务器
-            #base_url="https://0f5a89e0fdf0.ngrok-free.app/v1",
-
-            #base_url='http://localhost:11434/v1',                          #本地ollama  
-        )
+        client = _get_ollama_client()
 
         # 读取可自定义的 system prompt（opt 上有就用，否则用默认值）
         system_prompt = getattr(opt, 'system_prompt', DEFAULT_SYSTEM_PROMPT)

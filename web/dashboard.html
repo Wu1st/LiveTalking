@@ -5,356 +5,809 @@
 <link rel="icon" href="data:;base64,iVBORw0KGgo=">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>灵听智声——基于多语种 ASR 微调与热词触发的实时数字人</title>
+<link rel="preload" href="./fonts/SourceHanSansCN-VF.woff2" as="font" type="font/woff2" crossorigin>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 <style>
+@font-face {
+  font-family:"Source Han Sans CN";
+  src:url("./fonts/SourceHanSansCN-VF.woff2") format("woff2");
+  font-style:normal;
+  font-weight:250 900;
+  font-display:swap;
+}
 :root {
-  --accent:#4361ee; --accent2:#4cc9f0; --danger:#e63946;
-  --success:#2dc653; --bg:#0f0f1a; --surface:#1a1a2e;
-  --surface2:#22224a; --border:rgba(255,255,255,0.08);
-  --text:#e8e8f0; --text-muted:#7b7b9a; --radius:12px;
+  --primary:#3157d5;
+  --primary-dark:#2345b6;
+  --primary-soft:#edf2ff;
+  --accent:#5b7cfa;
+  --cyan:#37b8c7;
+  --danger:#e5484d;
+  --success:#22a06b;
+  --warning:#d99022;
+  --bg:#f3f6fb;
+  --surface:#ffffff;
+  --surface-soft:#f8faff;
+  --surface-muted:#eef2f8;
+  --border:#e4e9f2;
+  --border-strong:#d6deea;
+  --text:#182033;
+  --text-secondary:#566176;
+  --text-muted:#8a94a8;
+  --shadow-sm:0 6px 20px rgba(32,48,79,.06);
+  --shadow-lg:0 18px 55px rgba(32,48,79,.10);
+  --radius-sm:10px;
+  --radius:16px;
+  --radius-lg:24px;
 }
-/* 锁定整页高度，禁止页面级滚动 */
-html, body { height:100%; overflow:hidden; margin:0; padding:0; }
+* { box-sizing:border-box; }
+html, body { height:100%; margin:0; padding:0; }
 body {
-  font-family:'Segoe UI',system-ui,sans-serif;
-  background:var(--bg); color:var(--text);
-  display:flex; flex-direction:column;
+  min-width:320px;
+  overflow:hidden;
+  font-family:"Source Han Sans CN","Noto Sans CJK SC","Microsoft YaHei",system-ui,sans-serif;
+  background:
+    radial-gradient(circle at 10% 0%, rgba(91,124,250,.08), transparent 25%),
+    radial-gradient(circle at 100% 100%, rgba(55,184,199,.06), transparent 22%),
+    var(--bg);
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
 }
 
-/* ── Topbar ── */
+.app-shell { height:100%; display:flex; flex-direction:column; }
+
+/* ── 顶部导航 ── */
 .topbar {
-  display:flex; align-items:center; justify-content:space-between;
-  padding:9px 18px; background:var(--surface);
-  border-bottom:1px solid var(--border); flex-shrink:0;
+  height:72px;
+  flex-shrink:0;
+  padding:0 28px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:20px;
+  background:rgba(255,255,255,.92);
+  border-bottom:1px solid rgba(223,229,239,.9);
+  backdrop-filter:blur(18px);
+  position:relative;
+  z-index:20;
 }
-.topbar-title { font-size:15px; font-weight:600; color:var(--accent2); letter-spacing:.05em; }
-.topbar-controls { display:flex; gap:7px; align-items:center; }
+.brand { display:flex; align-items:center; gap:13px; min-width:220px; }
+.brand-mark {
+  width:42px; height:42px; border-radius:13px;
+  display:grid; place-items:center;
+  color:#fff; font-size:20px;
+  background:linear-gradient(145deg,var(--primary),#6e8cff);
+  box-shadow:0 10px 24px rgba(49,87,213,.25);
+}
+.brand-title { font-size:17px; line-height:1.15; font-weight:750; letter-spacing:.02em; }
+.brand-subtitle { margin-top:4px; font-size:11px; color:var(--text-muted); letter-spacing:.08em; text-transform:uppercase; }
+.topbar-controls { display:flex; gap:9px; align-items:center; justify-content:flex-end; }
+.topbar-controls.avatar-controls-hidden .avatar-header-control { display:none !important; }
+.connection-pill {
+  height:34px; padding:0 12px;
+  display:flex; align-items:center;
+  border:1px solid var(--border); border-radius:999px;
+  background:var(--surface-soft);
+}
 .status-dot {
-  width:8px; height:8px; border-radius:50%;
-  background:var(--danger); display:inline-block;
-  margin-right:5px; transition:background .3s;
+  width:8px; height:8px; flex-shrink:0; border-radius:50%;
+  background:#bdc5d4; display:inline-block;
+  margin-right:7px; transition:all .3s;
 }
-.status-dot.connected  { background:var(--success); box-shadow:0 0 6px var(--success); }
-.status-dot.connecting { background:#f4a261; animation:blink 1s infinite; }
-#status-text { font-size:12px; color:var(--text-muted); }
+.status-dot.connected  { background:var(--success); box-shadow:0 0 0 4px rgba(34,160,107,.12); }
+.status-dot.connecting { background:var(--warning); animation:blink 1s infinite; }
+#status-text { font-size:12px; color:var(--text-secondary); font-weight:650; }
+.stun-toggle {
+  height:34px; padding:0 10px;
+  display:flex; align-items:center; gap:7px;
+  border:1px solid var(--border); border-radius:10px;
+  color:var(--text-muted); font-size:12px; cursor:pointer;
+}
+.stun-toggle input { accent-color:var(--primary); }
 
-/* ── Video (固定高度，不随内容变化) ── */
-.video-section {
-  flex-shrink:0; height:52vh;
-  display:flex; justify-content:center; align-items:center;
-  background:#000; position:relative; overflow:hidden;
+/* ── 主工作区 ── */
+.workspace {
+  flex:1; min-height:0;
+  display:grid;
+  grid-template-columns:minmax(0,1.32fr) minmax(420px,.88fr);
+  gap:10px;
+  padding:10px 12px 12px;
+  max-width:1800px;
+  width:100%; margin:0 auto;
 }
-#video { max-width:100%; max-height:100%; object-fit:contain; display:block; }
-.video-overlay { position:absolute; top:10px; left:10px; display:flex; gap:7px; }
-.overlay-badge { font-size:11px; padding:3px 10px; border-radius:20px; font-weight:600; }
-.badge-rec { background:rgba(230,57,70,.85); color:#fff; display:none; }
+.stage-card,.control-card {
+  min-height:0;
+  background:var(--surface);
+  border:1px solid rgba(224,230,239,.95);
+  border-radius:20px;
+  box-shadow:0 10px 34px rgba(32,48,79,.075);
+  overflow:hidden;
+}
+.stage-card { display:flex; flex-direction:column; }
+.card-heading {
+  height:60px; flex-shrink:0;
+  padding:0 20px;
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+  border-bottom:1px solid var(--border);
+}
+.heading-main { display:flex; align-items:center; gap:10px; min-width:0; }
+.heading-icon {
+  width:30px; height:30px; border-radius:9px;
+  display:grid; place-items:center;
+  color:var(--primary); background:var(--primary-soft); font-size:14px;
+}
+.heading-title { font-size:16px; font-weight:720; letter-spacing:.025em; }
+.live-indicator { display:flex; align-items:center; gap:7px; color:var(--text-muted); font-size:11px; white-space:nowrap; }
+.live-indicator::before { content:""; width:6px; height:6px; border-radius:50%; background:var(--primary); box-shadow:0 0 0 4px rgba(49,87,213,.10); }
+
+.video-section {
+  flex:1; min-height:300px;
+  display:flex; justify-content:center; align-items:center;
+  position:relative; overflow:hidden;
+  background:
+    linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px),
+    radial-gradient(circle at 50% 42%,#27334d 0,#141a27 52%,#0d111b 100%);
+  background-size:36px 36px,36px 36px,auto;
+}
+#video { width:100%; height:100%; object-fit:contain; display:block; position:relative; z-index:1; }
+.stage-placeholder { position:absolute; inset:0; display:grid; place-items:center; z-index:0; text-align:center; color:rgba(255,255,255,.5); }
+.video-section.has-stream .stage-placeholder { opacity:0; pointer-events:none; }
+.placeholder-orb {
+  width:90px; height:90px; margin:0 auto 17px; border-radius:50%;
+  display:grid; place-items:center; font-size:34px; color:rgba(255,255,255,.78);
+  background:linear-gradient(145deg,rgba(91,124,250,.40),rgba(55,184,199,.18));
+  border:1px solid rgba(255,255,255,.12); box-shadow:0 24px 60px rgba(0,0,0,.28);
+}
+.stage-placeholder strong { display:block; color:rgba(255,255,255,.82); font-size:15px; font-weight:650; }
+.stage-placeholder span { display:block; font-size:12px; margin-top:7px; }
+.video-overlay { position:absolute; top:16px; left:16px; z-index:3; display:flex; gap:8px; }
+.overlay-badge { font-size:11px; padding:6px 11px; border-radius:999px; font-weight:650; backdrop-filter:blur(10px); }
+.badge-rec { background:rgba(229,72,77,.88); color:#fff; display:none; }
 .badge-rec.active { display:flex; align-items:center; gap:5px; }
 .badge-rec::before { content:''; width:7px; height:7px; border-radius:50%; background:#fff; animation:blink 1s infinite; }
-.badge-vad { background:rgba(76,201,240,.15); border:1px solid var(--accent2); color:var(--accent2); }
-.badge-vad.speaking { background:rgba(45,198,83,.15); border-color:var(--success); color:var(--success); }
+.badge-vad { background:rgba(18,27,43,.66); border:1px solid rgba(255,255,255,.18); color:#dce7ff; }
+.badge-vad.speaking { background:rgba(34,160,107,.82); border-color:rgba(255,255,255,.2); color:#fff; }
 .vad-bar-wrap {
-  position:absolute; bottom:10px; left:50%; transform:translateX(-50%);
+  position:absolute; bottom:18px; left:50%; transform:translateX(-50%); z-index:3;
   display:flex; gap:3px; align-items:flex-end;
-  height:24px; opacity:0; transition:opacity .3s;
+  height:28px; opacity:0; transition:opacity .3s;
+  padding:5px 10px; border-radius:999px; background:rgba(10,15,24,.55); backdrop-filter:blur(8px);
 }
 .vad-bar-wrap.active { opacity:1; }
-.vad-bar { width:4px; border-radius:2px; background:var(--accent2); height:4px; transition:height .08s; }
+.vad-bar { width:4px; border-radius:2px; background:#7adce7; height:4px; transition:height .08s; }
 
-/* ── Bottom panel：占满剩余高度 ── */
-.bottom-panel {
-  flex:1; min-height:0;          /* min-height:0 是关键 */
-  display:flex; flex-direction:column;
-  background:var(--surface); overflow:hidden;
-}
+/* ── 右侧交互控制台 ── */
+.control-card { display:flex; flex-direction:column; }
+.control-head { height:60px; flex-shrink:0; padding:0 21px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); }
+.control-title { font-size:20px; line-height:1; font-weight:720; letter-spacing:.07em; color:#202a42; }
+.session-tag { padding:6px 9px; border-radius:999px; background:#effaf5; color:var(--success); font-size:10px; font-weight:700; letter-spacing:.04em; }
+.bottom-panel { flex:1; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
 
 /* Tabs */
 .panel-tabs {
-  display:flex; border-bottom:1px solid var(--border);
-  padding:0 16px; flex-shrink:0;
+  margin:9px 10px 0; padding:4px;
+  display:grid; grid-template-columns:repeat(3,1fr); gap:4px;
+  flex-shrink:0; background:var(--surface-muted); border-radius:12px;
 }
 .tab-btn {
-  padding:9px 16px; font-size:13px; font-weight:500;
-  color:var(--text-muted); background:none; border:none;
-  border-bottom:2px solid transparent; cursor:pointer;
-  transition:all .2s; margin-bottom:-1px;
+  min-height:42px; padding:8px 10px;
+  display:flex; justify-content:center; align-items:center; gap:6px;
+  color:var(--text-muted); background:transparent; border:0; border-radius:9px;
+  font-size:14px; font-weight:660; cursor:pointer; transition:all .2s;
 }
-.tab-btn:hover { color:var(--text); }
-.tab-btn.active { color:var(--accent2); border-bottom-color:var(--accent2); }
-.tab-actions { margin-left:auto; display:flex; align-items:center; gap:8px; }
+.tab-btn i { font-size:15px; }
+.tab-btn:hover { color:var(--primary); }
+.tab-btn.active { color:var(--primary); background:#fff; box-shadow:0 3px 10px rgba(38,57,93,.08); }
 
 /* Tab panes */
 .tab-pane { display:none; flex:1; min-height:0; flex-direction:column; overflow:hidden; }
 .tab-pane.active { display:flex; }
 
 /* ── 对话模式 ── */
-/* 消息列表内部滚动，不撑开父容器 */
 .chat-messages {
   flex:1; min-height:0; overflow-y:auto;
-  padding:12px 16px; display:flex; flex-direction:column; gap:6px;
+  padding:18px 16px 12px; display:flex; flex-direction:column; gap:11px;
+  background:linear-gradient(180deg,#fff 0,#fbfcff 100%);
 }
-.chat-messages::-webkit-scrollbar { width:4px; }
-.chat-messages::-webkit-scrollbar-thumb { background:var(--surface2); border-radius:2px; }
-.msg { padding:7px 13px; border-radius:10px; font-size:14px; line-height:1.5; max-width:85%; }
-.msg-user   { background:var(--accent); color:#fff; align-self:flex-end; border-bottom-right-radius:3px; }
-.msg-system { background:var(--surface2); color:var(--text-muted); align-self:flex-start; border-bottom-left-radius:3px; font-size:13px; }
-.msg-avatar { background: rgba(76,201,240,0.08); border: 1px solid rgba(76,201,240,0.2); color: var(--text); align-self: flex-start;border-bottom-left-radius: 3px; }
+.chat-messages::-webkit-scrollbar,.monitor-scroll::-webkit-scrollbar,.saved-clips::-webkit-scrollbar { width:5px; }
+.chat-messages::-webkit-scrollbar-thumb,.monitor-scroll::-webkit-scrollbar-thumb,.saved-clips::-webkit-scrollbar-thumb { background:#d8deea; border-radius:4px; }
+.msg { max-width:88%; padding:10px 13px; border-radius:15px; font-size:13px; line-height:1.62; box-shadow:0 4px 14px rgba(37,50,75,.05); }
+.msg-user { align-self:flex-end; color:#fff; background:linear-gradient(145deg,var(--primary),#5475e5); border-bottom-right-radius:5px; }
+.msg-system { align-self:flex-start; color:var(--text-secondary); background:#fff; border:1px solid var(--border); border-bottom-left-radius:5px; }
+.msg-avatar { align-self:flex-start; color:var(--text); background:var(--primary-soft); border:1px solid #dce5ff; border-bottom-left-radius:5px; }
 
-/* 底部固定操作区 */
-.chat-bottom { flex-shrink:0; border-top:1px solid var(--border); }
+.chat-bottom { flex-shrink:0; border-top:1px solid var(--border); background:#fff; }
 .chat-input-row {
-  padding:8px 12px; display:flex; gap:7px; align-items:flex-end;
+  padding:12px 14px 9px; display:flex; gap:8px; align-items:flex-end;
 }
 .chat-input-row textarea {
-  flex:1; background:var(--surface2); border:1px solid var(--border);
-  border-radius:var(--radius); color:var(--text);
-  padding:7px 12px; font-size:14px; resize:none;
-  min-height:36px; max-height:88px; font-family:inherit;
+  flex:1; min-height:42px; max-height:92px; resize:none;
+  padding:10px 13px; border:1px solid var(--border-strong); border-radius:13px;
+  background:var(--surface-soft); color:var(--text);
+  font-family:inherit; font-size:12px; line-height:1.5;
+  transition:border-color .2s,box-shadow .2s,background .2s;
 }
-.chat-input-row textarea:focus { outline:none; border-color:var(--accent); }
+.chat-input-row textarea:focus { outline:none; border-color:#9eb0ed; background:#fff; box-shadow:0 0 0 4px rgba(49,87,213,.08); }
 .chat-input-row textarea::placeholder { color:var(--text-muted); }
 
-/* 语音行：PTT + 分隔 + VAD 同一行 */
 .voice-row {
-  padding:7px 12px 10px;
-  display:flex; align-items:center; gap:9px;
-  border-top:1px solid var(--border); flex-wrap:wrap;
+  padding:7px 14px 12px; display:flex; flex-direction:column; gap:8px;
 }
-.vad-sep { width:1px; height:26px; background:var(--border); flex-shrink:0; }
-.slider-wrap { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-muted); }
-input[type=range] { accent-color:var(--accent2); }
+.voice-actions { width:100%; display:flex; align-items:center; gap:7px; }
+.voice-actions #ptt-btn,.voice-actions #vad-toggle { min-height:34px; padding:6px 12px; border-radius:9px; font-size:12px; }
+.vad-sep { width:1px; height:22px; margin:0 1px; background:var(--border); flex-shrink:0; }
+.voice-settings { width:100%; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.slider-wrap {
+  min-width:0; height:36px; padding:0 10px;
+  display:grid; grid-template-columns:auto minmax(42px,1fr) auto; align-items:center; gap:7px;
+  border:1px solid var(--border); border-radius:10px; background:var(--surface-soft);
+  font-size:11px; color:var(--text-muted);
+}
+.slider-wrap > span:first-child { color:var(--text-secondary); font-weight:650; white-space:nowrap; }
+.slider-wrap > span:last-child { min-width:25px; color:var(--primary); font-weight:750; text-align:right; }
+.slider-wrap input[type=range] { width:100% !important; min-width:42px; height:3px; }
+input[type=range] { accent-color:var(--primary); }
 
-/* PTT 录音状态 */
 #ptt-btn.recording {
   background:var(--danger) !important; color:#fff !important;
   border-color:var(--danger) !important; animation:pulse-ring 1.5s infinite;
 }
-/* VAD 激活状态 */
 #vad-toggle.active {
   background:var(--danger); color:#fff; border-color:var(--danger);
   animation:pulse-ring 1.5s infinite;
 }
 
 /* ── 朗读模式 ── */
-.tts-pane { padding:16px; flex:1; min-height:0; display:flex; flex-direction:column; gap:10px; }
-.tts-pane label { font-size:13px; color:var(--text-muted); flex-shrink:0; }
+.tts-pane { padding:20px 16px 16px; flex:1; min-height:0; display:flex; flex-direction:column; gap:12px; }
+.mode-intro { padding:13px 14px; border:1px solid #dce5ff; border-radius:13px; background:var(--primary-soft); }
+.mode-intro strong { display:block; font-size:13px; color:var(--primary-dark); }
+.mode-intro span { display:block; margin-top:4px; font-size:11px; line-height:1.55; color:#6e7da2; }
+.tts-pane label { font-size:12px; color:var(--text-secondary); font-weight:650; flex-shrink:0; }
 .tts-pane textarea {
-  background:var(--surface2); border:1px solid var(--border);
-  border-radius:var(--radius); color:var(--text);
-  padding:12px 14px; font-size:14px; resize:none;
-  flex:1; min-height:0; font-family:inherit;
+  flex:1; min-height:130px; padding:14px;
+  background:var(--surface-soft); border:1px solid var(--border-strong);
+  border-radius:14px; color:var(--text); resize:none;
+  font-family:inherit; font-size:12px; line-height:1.7;
 }
-.tts-pane textarea:focus { outline:none; border-color:var(--accent); }
+.tts-pane textarea:focus { outline:none; border-color:#9eb0ed; background:#fff; box-shadow:0 0 0 4px rgba(49,87,213,.08); }
 
 /* ── 监听模式 ── */
 .monitor-pane { flex:1; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
 .monitor-toolbar {
-  padding:9px 14px; display:flex; gap:8px; align-items:center;
-  flex-shrink:0; border-bottom:1px solid var(--border); flex-wrap:wrap;
+  margin-top:10px; padding:10px 14px; display:flex; gap:8px; align-items:center;
+  flex-shrink:0; flex-wrap:wrap;
 }
 .monitor-toolbar input[type=text] {
-  flex:1; min-width:100px;
-  background:var(--surface2); border:1px solid var(--border);
-  border-radius:var(--radius); color:var(--text);
-  padding:5px 11px; font-size:13px; font-family:inherit;
+  flex:1; min-width:150px; height:36px; padding:0 11px;
+  background:var(--surface-soft); border:1px solid var(--border-strong);
+  border-radius:10px; color:var(--text);
+  font-family:inherit; font-size:11px;
 }
-.monitor-toolbar input:focus { outline:none; border-color:var(--accent); }
+.monitor-toolbar .btn { min-height:36px; padding:7px 12px; font-size:12px; }
+.monitor-toolbar input:focus,.monitor-savepath input:focus { outline:none; border-color:#9eb0ed; box-shadow:0 0 0 3px rgba(49,87,213,.07); }
 .monitor-toolbar input::placeholder { color:var(--text-muted); }
 .monitor-savepath {
-  padding:7px 14px; display:flex; gap:8px; align-items:center;
-  flex-shrink:0; border-bottom:1px solid var(--border);
+  padding:0 14px 11px; display:grid; grid-template-columns:auto minmax(120px,1fr) auto 72px auto; gap:8px; align-items:center; flex-shrink:0;
 }
-.monitor-savepath label { font-size:12px; color:var(--text-muted); flex-shrink:0; white-space:nowrap; }
+.monitor-savepath label { font-size:12px; font-weight:550; color:var(--text-secondary); white-space:nowrap; }
 .monitor-savepath input {
-  flex:1; background:var(--surface2); border:1px solid var(--border);
-  border-radius:var(--radius); color:var(--text);
-  padding:5px 11px; font-size:12px; font-family:inherit;
+  min-width:0; height:36px; padding:0 10px;
+  background:var(--surface-soft); border:1px solid var(--border);
+  border-radius:9px; color:var(--text);
+  font-family:inherit; font-size:11px;
 }
-.monitor-savepath input:focus { outline:none; border-color:var(--accent); }
 .monitor-savepath input::placeholder { color:var(--text-muted); }
 .monitor-statusbar {
-  padding:5px 14px; display:flex; gap:14px; align-items:center;
-  flex-shrink:0; font-size:12px; color:var(--text-muted);
-  background:rgba(0,0,0,.18); border-bottom:1px solid var(--border);
+  margin:0 14px; padding:8px 10px; display:flex; gap:13px; align-items:center; flex-wrap:wrap;
+  flex-shrink:0; font-size:10px; color:var(--text-muted);
+  background:var(--surface-soft); border:1px solid var(--border); border-radius:10px;
 }
 .stat-item { display:flex; align-items:center; gap:5px; }
 .mic-dot { width:7px; height:7px; border-radius:50%; background:var(--text-muted); flex-shrink:0; }
 .mic-dot.active   { background:var(--success); animation:blink 1s infinite; }
 .mic-dot.speaking { background:var(--danger);  box-shadow:0 0 5px var(--danger); animation:none; }
 .monitor-scroll {
-  flex:1; min-height:0; overflow-y:auto;
-  padding:10px 14px; display:flex; flex-direction:column; gap:5px;
+  flex:1; min-height:0; overflow-y:auto; margin-top:9px;
+  padding:4px 14px 10px; display:flex; flex-direction:column; gap:7px;
 }
-.monitor-scroll::-webkit-scrollbar { width:4px; }
-.monitor-scroll::-webkit-scrollbar-thumb { background:var(--surface2); border-radius:2px; }
 .monitor-entry {
-  padding:6px 12px; border-radius:8px;
-  background:var(--surface2); font-size:13px;
-  line-height:1.5; display:flex; gap:10px;
+  padding:9px 11px; border-radius:10px; border:1px solid var(--border);
+  background:#fff; font-size:12px; line-height:1.55; display:flex; gap:9px;
 }
 .monitor-entry-time { color:var(--text-muted); font-size:11px; flex-shrink:0; padding-top:2px; }
-.monitor-entry.highlight { background:rgba(230,57,70,.12); border-left:3px solid var(--danger); }
+.monitor-entry.highlight { background:#fff7f7; border-color:#f5c9cb; border-left:3px solid var(--danger); }
 .saved-clips {
-  flex-shrink:0; border-top:1px solid var(--border);
-  max-height:120px; overflow-y:auto; padding:8px 14px;
+  flex-shrink:0; border-top:1px solid var(--border); background:var(--surface-soft);
+  max-height:132px; overflow-y:auto; padding:9px 14px;
 }
 .saved-clips-title { font-size:11px; color:var(--text-muted); margin-bottom:5px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; }
 .clip-item {
-  background:rgba(67,97,238,.1); border:1px solid rgba(67,97,238,.25);
-  border-radius:8px; padding:7px 11px; font-size:12px;
+  background:#fff; border:1px solid #dce5ff;
+  border-radius:10px; padding:8px 10px; font-size:11px;
   margin-bottom:5px; display:flex; justify-content:space-between; align-items:flex-start; gap:8px;
 }
-.clip-keyword { font-weight:600; color:var(--accent2); font-size:11px; margin-bottom:2px; }
+.clip-keyword { font-weight:700; color:var(--primary); font-size:11px; margin-bottom:2px; }
 .clip-preview { color:var(--text-muted); line-height:1.4; }
 .clip-path    { color:var(--text-muted); font-size:10px; margin-top:2px; }
 
 /* ── 通用按钮 ── */
 .btn {
-  display:inline-flex; align-items:center; gap:5px;
-  padding:6px 13px; border-radius:var(--radius); font-size:13px;
-  font-weight:500; border:1px solid transparent;
-  cursor:pointer; transition:all .15s; font-family:inherit; white-space:nowrap;
+  min-height:36px; padding:7px 13px;
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  border:1px solid transparent; border-radius:10px;
+  font-family:inherit; font-size:12px; font-weight:650; line-height:1;
+  cursor:pointer; white-space:nowrap;
+  transition:transform .16s,box-shadow .16s,background .16s,border-color .16s,color .16s;
 }
 .btn:disabled { opacity:.4; cursor:not-allowed; }
-.btn-primary { background:var(--accent); color:#fff; border-color:var(--accent); }
-.btn-primary:hover:not(:disabled) { background:#3451d1; }
+.btn:hover:not(:disabled) { transform:translateY(-1px); }
+.btn-primary { background:linear-gradient(145deg,var(--primary),#5878e7); color:#fff; border-color:var(--primary); box-shadow:0 7px 18px rgba(49,87,213,.18); }
+.btn-primary:hover:not(:disabled) { background:linear-gradient(145deg,var(--primary-dark),#4f6fdc); color:#fff; }
 .btn-danger  { background:var(--danger); color:#fff; border-color:var(--danger); }
-.btn-danger:hover:not(:disabled) { background:#c1121f; }
-.btn-ghost   { background:transparent; color:var(--text-muted); border-color:var(--border); }
-.btn-ghost:hover:not(:disabled) { color:var(--text); border-color:rgba(255,255,255,.2); }
-.btn-sm   { padding:4px 10px; font-size:12px; }
-.btn-icon { padding:6px 9px; }
+.btn-danger:hover:not(:disabled) { background:#cf393e; color:#fff; }
+.btn-ghost { background:#fff; color:var(--text-secondary); border-color:var(--border-strong); }
+.btn-ghost:hover:not(:disabled) { color:var(--primary); border-color:#b9c6ee; background:var(--primary-soft); }
+.btn-sm { min-height:32px; padding:6px 10px; font-size:11px; }
+.btn-icon { width:42px; padding:0; flex-shrink:0; }
+.wide-action { width:100%; min-height:42px; }
+
+@media (max-width:1100px) {
+  .workspace { grid-template-columns:minmax(0,1.05fr) minmax(380px,.95fr); padding:9px; gap:9px; }
+  .topbar { padding:0 18px; }
+  .brand-subtitle { display:none; }
+}
+
+@media (max-width:860px) {
+  html,body { height:auto; min-height:100%; }
+  body { overflow:auto; }
+  .app-shell { min-height:100vh; height:auto; }
+  .topbar { height:auto; min-height:68px; padding:12px 14px; align-items:flex-start; }
+  .brand { min-width:auto; }
+  .brand-mark { width:38px; height:38px; }
+  .brand-title { font-size:15px; }
+  .topbar-controls { flex-wrap:wrap; }
+  .connection-pill,.stun-toggle { display:none; }
+  .workspace { display:flex; flex-direction:column; padding:12px; }
+  .stage-card,.control-card { min-height:auto; border-radius:18px; }
+  .video-section { height:52vh; min-height:330px; flex:none; }
+  .control-card { height:640px; }
+}
+
+@media (max-width:540px) {
+  .topbar { align-items:center; }
+  .topbar-controls .btn { font-size:0; width:36px; padding:0; }
+  .topbar-controls .btn i { font-size:14px; margin:0; }
+  .video-section { height:44vh; min-height:280px; }
+  .voice-row { gap:7px; }
+  .voice-settings { grid-template-columns:1fr; }
+  .monitor-savepath { grid-template-columns:auto 1fr; }
+  .monitor-savepath label:nth-of-type(2),#monitor-window,.monitor-savepath label:last-child { display:none; }
+}
 
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
 @keyframes pulse-ring {
-  0%  { box-shadow:0 0 0 0 rgba(230,57,70,.5); }
-  70% { box-shadow:0 0 0 10px rgba(230,57,70,0); }
-  100%{ box-shadow:0 0 0 0 rgba(230,57,70,0); }
+  0%  { box-shadow:0 0 0 0 rgba(229,72,77,.42); }
+  70% { box-shadow:0 0 0 10px rgba(229,72,77,0); }
+  100%{ box-shadow:0 0 0 0 rgba(229,72,77,0); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   五模式工作台：左侧导航 + 右侧独立页面
+   ══════════════════════════════════════════════════════════════ */
+.product-body {
+  flex:1; min-height:0; display:flex; overflow:hidden;
+  border-top:1px solid rgba(255,255,255,.8);
+}
+.mode-sidebar {
+  width:196px; flex-shrink:0; display:flex; flex-direction:column;
+  padding:16px 10px 14px; background:#fff; border-right:1px solid var(--border);
+}
+.sidebar-caption {
+  padding:0 14px 10px; color:#a0a9ba; font-size:11px; font-weight:650;
+  letter-spacing:.12em; text-transform:uppercase;
+}
+.mode-navigation { display:flex; flex-direction:column; gap:7px; }
+.mode-nav-item {
+  width:100%; min-height:56px; padding:0 12px; display:flex; align-items:center;
+  gap:11px; border:1px solid transparent; border-radius:12px; background:transparent;
+  color:#4f5b70; font-family:inherit; text-align:left; cursor:pointer;
+  transition:background .2s,border-color .2s,color .2s,box-shadow .2s,transform .2s;
+}
+.mode-nav-item:hover { color:var(--primary); background:#f6f8ff; transform:translateX(2px); }
+.mode-nav-item.active {
+  color:var(--primary); background:#eaf1ff; border-color:#dbe6ff;
+  box-shadow:inset 3px 0 0 var(--primary);
+}
+.mode-nav-icon {
+  width:34px; height:34px; flex-shrink:0; display:grid; place-items:center;
+  border-radius:10px; color:#6b7890; background:#f4f6fa; font-size:16px;
+}
+.mode-nav-item.active .mode-nav-icon { color:var(--primary); background:#fff; box-shadow:0 4px 12px rgba(49,87,213,.10); }
+.mode-nav-copy { min-width:0; display:flex; align-items:center; }
+.mode-nav-title { font-size:16px; font-weight:700; line-height:1.25; letter-spacing:.015em; }
+.sidebar-foot {
+  margin-top:auto; padding:14px; display:flex; gap:9px; align-items:flex-start;
+  color:#8994a8; background:#f7f9fc; border:1px solid var(--border); border-radius:12px;
+  font-size:10px; line-height:1.55;
+}
+.sidebar-foot i { color:var(--primary); font-size:14px; margin-top:1px; }
+
+.page-canvas {
+  flex:1; min-width:0; min-height:0; padding:10px 12px 12px; overflow:auto;
+  background:
+    radial-gradient(circle at 88% 4%,rgba(91,124,250,.055),transparent 24%),
+    #f4f7fb;
+}
+.page-canvas::-webkit-scrollbar { width:7px; }
+.page-canvas::-webkit-scrollbar-thumb { background:#d7deea; border-radius:6px; }
+.mode-page { display:none; width:100%; min-height:100%; }
+.mode-page.active { display:flex; flex-direction:column; animation:page-in .22s ease-out; }
+@keyframes page-in { from{opacity:.45;transform:translateY(4px)} to{opacity:1;transform:none} }
+.page-heading {
+  min-height:58px; flex-shrink:0; display:flex; align-items:flex-start;
+  justify-content:space-between; gap:24px; padding:2px 2px 14px;
+}
+.page-heading-main { display:flex; align-items:flex-start; gap:12px; min-width:0; }
+.page-heading-accent { width:4px; height:34px; margin-top:2px; border-radius:4px; background:linear-gradient(180deg,var(--primary),#7190ff); }
+.page-title { margin:0; color:#1d273b; font-size:24px; line-height:1.25; font-weight:760; letter-spacing:.025em; }
+.page-description { margin:5px 0 0; color:#8792a6; font-size:12px; line-height:1.5; }
+.page-badge {
+  margin-top:5px; padding:7px 12px; border:1px solid #dbe5fb; border-radius:999px;
+  color:#6174a9; background:#f8faff; font-size:11px; white-space:nowrap;
+}
+
+.avatar-page { height:100%; }
+.avatar-mode-grid {
+  flex:1; min-height:560px; display:grid;
+  grid-template-columns:minmax(0,1.32fr) minmax(430px,.82fr); gap:14px;
+}
+.avatar-slot { min-width:0; min-height:0; display:flex; }
+.avatar-slot:empty { display:none; }
+.avatar-mode-grid .stage-card,.avatar-mode-grid .control-card {
+  width:100%; height:100%; border-radius:18px; box-shadow:0 10px 32px rgba(35,52,84,.07);
+}
+.avatar-mode-grid .stage-card { min-height:0; }
+.avatar-mode-grid .control-card { min-width:0; }
+.avatar-mode-grid .card-heading,.avatar-mode-grid .control-head { height:58px; }
+.avatar-mode-grid .video-section { min-height:420px; }
+.control-kicker { color:#95a0b2; font-size:10px; font-weight:650; letter-spacing:.1em; text-transform:uppercase; }
+.chat-page-control .chat-messages { padding-top:20px; }
+.tts-page-control .tts-pane { padding:22px 20px 20px; gap:15px; }
+.tts-page-control .mode-intro { padding:16px; }
+.tts-page-control .mode-intro strong { font-size:15px; }
+.tts-page-control .mode-intro span { margin-top:6px; font-size:12px; }
+.tts-page-control .tts-pane label { margin-top:2px; font-size:13px; }
+.tts-page-control .tts-pane textarea { font-size:13px; }
+
+.surface-card {
+  background:#fff; border:1px solid rgba(224,230,239,.96); border-radius:18px;
+  box-shadow:0 10px 32px rgba(35,52,84,.065);
+}
+.surface-head {
+  min-height:58px; padding:0 20px; display:flex; align-items:center; justify-content:space-between;
+  gap:16px; border-bottom:1px solid var(--border);
+}
+.surface-title { display:flex; align-items:center; gap:10px; color:#263149; font-size:15px; font-weight:720; }
+.surface-title i { color:var(--primary); font-size:17px; }
+.surface-hint { color:#919caf; font-size:11px; }
+
+/* 音频转写 */
+.transcribe-layout { display:flex; flex-direction:column; gap:14px; flex:1; }
+.transcribe-source-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.source-card { min-height:290px; overflow:hidden; }
+.source-card-body { height:calc(100% - 58px); padding:20px; display:flex; flex-direction:column; }
+.audio-dropzone {
+  flex:1; min-height:150px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:20px; border:1.5px dashed #a9baf2; border-radius:15px; background:#fbfcff;
+  color:#6f7d96; text-align:center; cursor:pointer; transition:all .2s;
+}
+.audio-dropzone:hover,.audio-dropzone.dragging { border-color:var(--primary); background:#f3f6ff; box-shadow:inset 0 0 0 3px rgba(49,87,213,.04); }
+.dropzone-icon {
+  width:52px; height:52px; margin-bottom:11px; display:grid; place-items:center;
+  border-radius:15px; color:var(--primary); background:#eaf1ff; font-size:23px;
+}
+.audio-dropzone strong { color:#33405a; font-size:14px; font-weight:700; }
+.audio-dropzone span { margin-top:5px; color:#98a3b5; font-size:11px; }
+.audio-file-row { margin-top:12px; min-height:38px; display:flex; align-items:center; gap:10px; }
+.audio-file-name { flex:1; min-width:0; color:#6b768b; font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.audio-file-name.ready { color:#34415a; }
+.audio-file-name i { margin-right:6px; color:var(--primary); }
+.environment-panel { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+.environment-orb {
+  width:86px; height:86px; margin-bottom:14px; display:grid; place-items:center;
+  border:1px solid #dfe7fa; border-radius:50%; color:var(--primary); background:#f5f8ff;
+  font-size:31px; box-shadow:0 12px 30px rgba(49,87,213,.09); transition:all .25s;
+}
+.environment-orb.active { color:#fff; background:linear-gradient(145deg,var(--danger),#ef6f73); border-color:transparent; animation:pulse-ring 1.5s infinite; }
+.environment-panel strong { color:#33405a; font-size:14px; }
+.environment-panel p { max-width:380px; margin:6px 0 15px; color:#929dae; font-size:11px; line-height:1.6; }
+.environment-state { min-height:18px; margin-top:10px; display:flex; align-items:center; gap:7px; color:#8994a8; font-size:11px; }
+.environment-dot { width:7px; height:7px; border-radius:50%; background:#bdc5d2; }
+.environment-dot.active { background:var(--success); animation:blink 1s infinite; }
+.environment-dot.speaking { background:var(--danger); box-shadow:0 0 0 4px rgba(229,72,77,.10); }
+.transcript-card { flex:1; min-height:270px; display:flex; flex-direction:column; overflow:hidden; }
+.transcript-actions { display:flex; align-items:center; gap:7px; }
+.transcript-meta { color:#8d98aa; font-size:11px; }
+.transcript-editor {
+  flex:1; min-height:210px; width:100%; padding:18px 20px; resize:vertical; border:0; outline:0;
+  color:#263149; background:linear-gradient(180deg,#fff,#fcfdff); font-family:inherit;
+  font-size:14px; line-height:1.85;
+}
+.transcript-editor::placeholder { color:#a9b2c1; }
+
+/* 监听模式 */
+.monitor-work-card { flex:1; min-height:560px; overflow:hidden; display:flex; flex-direction:column; }
+.monitor-work-card .monitor-pane { padding-top:4px; }
+.monitor-work-card .monitor-toolbar { margin-top:6px; }
+.monitor-work-card .monitor-scroll { margin:12px 14px 0; padding:10px; border:1px solid var(--border); border-radius:12px; background:#fbfcfe; }
+.monitor-work-card .monitor-statusbar { padding:10px 12px; font-size:11px; }
+
+/* 文档识别外形 */
+.document-card { flex:1; min-height:610px; padding:28px 30px 30px; display:flex; flex-direction:column; }
+.document-controls { display:grid; grid-template-columns:repeat(3,minmax(180px,235px)); gap:10px; }
+.field-select { display:flex; flex-direction:column; gap:7px; }
+.field-select label { color:#6f7b90; font-size:11px; font-weight:650; }
+.field-select select {
+  height:48px; padding:0 14px; border:1px solid var(--border-strong); border-radius:10px;
+  color:#344057; background:#fff; font-family:inherit; font-size:13px; outline:none;
+}
+.document-options { margin:22px 0; display:flex; align-items:center; gap:30px; color:#637087; font-size:12px; }
+.option-group { display:flex; align-items:center; gap:10px; }
+.option-group strong { color:#38445c; font-weight:650; }
+.option-pill { padding:6px 10px; border-radius:999px; color:var(--primary); background:#edf3ff; }
+.document-dropzone {
+  flex:1; min-height:340px; padding:30px; display:flex; flex-direction:column; align-items:center;
+  justify-content:center; border:1.5px dashed #8fa8ff; border-radius:16px; background:#fdfdff;
+  text-align:center;
+}
+.document-illustration {
+  position:relative; width:112px; height:82px; margin-bottom:22px;
+}
+.doc-sheet {
+  position:absolute; width:62px; height:76px; top:4px; left:25px; border:2px solid #89a4ff;
+  border-radius:8px; background:#fff; box-shadow:0 8px 18px rgba(49,87,213,.08);
+}
+.doc-sheet::before,.doc-sheet::after { content:""; position:absolute; left:12px; right:12px; height:2px; background:#b6c4ef; }
+.doc-sheet::before { top:27px; box-shadow:0 11px 0 #b6c4ef,0 22px 0 #b6c4ef; }
+.doc-sheet::after { width:20px; height:14px; left:20px; top:8px; border-radius:4px; background:#e5edff; }
+.doc-sheet.back-left { transform:rotate(-15deg); left:9px; top:10px; }
+.doc-sheet.back-right { transform:rotate(15deg); left:42px; top:10px; }
+.doc-sheet.front { z-index:2; }
+.document-dropzone strong { color:#313d54; font-size:15px; }
+.document-dropzone p { margin:8px 0 20px; color:#8e99ab; font-size:12px; }
+.document-actions { display:flex; gap:10px; }
+.document-note { margin-top:13px; color:#a0a9b8; font-size:10px; }
+
+@media (max-width:1180px) {
+  .mode-sidebar { width:180px; }
+  .avatar-mode-grid { grid-template-columns:minmax(0,1.08fr) minmax(390px,.92fr); }
+  .page-canvas { padding:9px 10px 10px; }
+}
+@media (max-width:920px) {
+  html,body { height:auto; min-height:100%; }
+  body { overflow:auto; }
+  .app-shell { min-height:100vh; height:auto; }
+  .product-body { flex-direction:column; overflow:visible; }
+  .mode-sidebar { width:100%; padding:9px 12px; border-right:0; border-bottom:1px solid var(--border); }
+  .sidebar-caption,.sidebar-foot { display:none; }
+  .mode-navigation { flex-direction:row; overflow-x:auto; gap:6px; }
+  .mode-nav-item { min-width:132px; width:auto; min-height:44px; padding:0 12px; }
+  .mode-nav-item.active { box-shadow:inset 0 -3px 0 var(--primary); }
+  .mode-nav-icon { width:28px; height:28px; font-size:14px; }
+  .mode-nav-title { font-size:15px; }
+  .page-canvas { overflow:visible; }
+  .avatar-page { height:auto; }
+  .avatar-mode-grid { display:flex; flex-direction:column; min-height:0; }
+  .avatar-mode-grid .stage-card { height:520px; }
+  .avatar-mode-grid .control-card { height:620px; }
+  .transcribe-source-grid { grid-template-columns:1fr; }
+  .document-controls { grid-template-columns:1fr; }
+}
+@media (max-width:620px) {
+  .page-canvas { padding:12px; }
+  .page-heading { min-height:52px; }
+  .page-title { font-size:20px; }
+  .page-description,.page-badge { display:none; }
+  .mode-nav-item { min-width:116px; }
+  .mode-nav-icon { display:none; }
+  .avatar-mode-grid .stage-card { height:430px; }
+  .avatar-mode-grid .control-card { height:660px; }
+  .transcript-actions { gap:4px; }
+  .transcript-actions .btn { font-size:0; width:34px; padding:0; }
+  .transcript-actions .btn i { font-size:13px; }
+  .surface-head { padding:0 14px; }
+  .source-card-body { padding:14px; }
+  .document-card { padding:20px 16px; }
+  .document-options { align-items:flex-start; flex-direction:column; gap:10px; }
+  .document-actions { flex-wrap:wrap; justify-content:center; }
 }
 </style>
 </head>
 <body>
-
-<!-- Topbar -->
-<div class="topbar">
-  <div class="topbar-title"><i class="bi bi-person-video2 me-2"></i>灵听智声 / LiveTalking</div>
-  <div class="topbar-controls">
-    <span class="status-dot" id="connection-status"></span>
-    <span id="status-text">未连接</span>
-    <button class="btn btn-primary btn-sm" id="start"><i class="bi bi-play-fill"></i> 连接</button>
-    <button class="btn btn-danger btn-sm" id="stop" style="display:none"><i class="bi bi-stop-fill"></i> 断开</button>
-    <button class="btn btn-ghost btn-sm" id="btn_start_record"><i class="bi bi-record-fill"></i> 录制</button>
-    <button class="btn btn-ghost btn-sm" id="btn_stop_record" disabled><i class="bi bi-stop-fill"></i> 停录</button>
-    <label style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:4px;margin-left:4px">
-      <input type="checkbox" id="use-stun"> STUN
-    </label>
-  </div>
-</div>
-
-<!-- 视频区 -->
-<div class="video-section">
-  <video id="video" autoplay playsinline></video>
-  <audio id="audio" autoplay style="display:none"></audio>
-  <div class="video-overlay">
-    <div class="overlay-badge badge-rec" id="recording-indicator">录制中</div>
-    <div class="overlay-badge badge-vad" id="vad-badge" style="display:none">监听中</div>
-  </div>
-  <div class="vad-bar-wrap" id="vad-bars">
-    <div class="vad-bar" id="b0"></div><div class="vad-bar" id="b1"></div>
-    <div class="vad-bar" id="b2"></div><div class="vad-bar" id="b3"></div>
-    <div class="vad-bar" id="b4"></div><div class="vad-bar" id="b5"></div>
-    <div class="vad-bar" id="b6"></div><div class="vad-bar" id="b7"></div>
-  </div>
-</div>
-
-<!-- 底部面板 -->
-<div class="bottom-panel">
-  <div class="panel-tabs">
-    <button class="tab-btn active" data-tab="chat"><i class="bi bi-chat-dots"></i> 对话模式</button>
-    <button class="tab-btn" data-tab="tts"><i class="bi bi-volume-up"></i> 朗读模式</button>
-    <button class="tab-btn" data-tab="monitor"><i class="bi bi-ear"></i> 监听模式</button>
-  </div>
-
-  <!-- 对话模式 -->
-  <div class="tab-pane active" id="pane-chat">
-    <div class="chat-messages" id="chat-messages">
-      <div class="msg msg-system">欢迎使用，请点击顶部"连接"按钮开始。</div>
-    </div>
-    <div class="chat-bottom">
-      <div class="chat-input-row">
-        <textarea id="chat-message" rows="1" placeholder="输入消息，回车发送…"></textarea>
-        <button class="btn btn-primary btn-icon" id="chat-send" title="发送"><i class="bi bi-send-fill"></i></button>
-        <button class="btn btn-ghost btn-icon" id="interrupt-btn" title="打断"><i class="bi bi-skip-forward-fill"></i></button>
-      </div>
-      <!-- 语音行：PTT + VAD 同一行 -->
-      <div class="voice-row">
-        <button class="btn btn-ghost" id="ptt-btn"><i class="bi bi-mic-fill"></i> 按住说话</button>
-        <span id="ptt-hint" style="font-size:11px;color:var(--text-muted)">松开发送</span>
-        <div class="vad-sep"></div>
-        <button class="btn btn-ghost" id="vad-toggle"><i class="bi bi-mic"></i> 持续对话</button>
-        <div class="slider-wrap">
-          <span>静音</span>
-          <input type="range" id="vad-silence" min="5" max="40" value="15" style="width:64px">
-          <span id="vad-silence-val">1.5s</span>
-        </div>
-        <div class="slider-wrap">
-          <span>灵敏度</span>
-          <input type="range" id="vad-threshold" min="1" max="30" value="8" style="width:64px">
-          <span id="vad-threshold-val">8</span>
-        </div>
+<div class="app-shell">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark"><i class="bi bi-soundwave"></i></div>
+      <div>
+        <div class="brand-title">灵听智声</div>
+        <div class="brand-subtitle">Digital Human</div>
       </div>
     </div>
-  </div>
-
-  <!-- 朗读模式 -->
-  <div class="tab-pane" id="pane-tts">
-    <div class="tts-pane">
-      <label>输入要朗读的文本</label>
-      <textarea id="message" rows="5" placeholder="输入您想让数字人朗读的文字…"></textarea>
-      <button class="btn btn-primary" id="echo-submit"><i class="bi bi-volume-up"></i> 朗读文本</button>
+    <div class="topbar-controls">
+      <div class="connection-pill avatar-header-control">
+        <span class="status-dot" id="connection-status"></span>
+        <span id="status-text">未连接</span>
+      </div>
+      <button class="btn btn-primary btn-sm avatar-header-control" id="start"><i class="bi bi-play-fill"></i> 连接数字人</button>
+      <button class="btn btn-danger btn-sm avatar-header-control" id="stop" style="display:none"><i class="bi bi-stop-fill"></i> 断开连接</button>
+      <button class="btn btn-ghost btn-sm avatar-header-control" id="btn_start_record"><i class="bi bi-record-circle"></i> 录制</button>
+      <button class="btn btn-ghost btn-sm avatar-header-control" id="btn_stop_record" disabled><i class="bi bi-stop-circle"></i> 停止</button>
+      <label class="stun-toggle avatar-header-control"><input type="checkbox" id="use-stun"> STUN</label>
     </div>
-  </div>
+  </header>
 
-  <!-- 监听模式 -->
-  <div class="tab-pane" id="pane-monitor">
-    <div class="monitor-pane">
-      <div class="monitor-toolbar">
-        <input type="text" id="monitor-keywords" placeholder="请输入关键词，使用逗号分隔，示例：你好，再见">
-        <button class="btn btn-ghost btn-sm" id="monitor-toggle"><i class="bi bi-ear"></i> 开始监听</button>
-        <button class="btn btn-ghost btn-sm" id="monitor-clear"><i class="bi bi-trash"></i> 清空</button>
-      </div>
-      <div class="monitor-savepath">
-        <label>保存路径：</label>
-        <input type="text" id="monitor-savedir" placeholder="请输入记录保存路径，默认使用 ./monitor_clips">
-        <label style="margin-left:8px;white-space:nowrap">前后窗口：</label>
-        <input type="number" id="monitor-window" value="60" min="10" max="600"
-          style="width:64px;text-align:center">
-        <label>秒</label>
-      </div>
-      <div class="monitor-statusbar">
-        <div class="stat-item">
-          <div class="mic-dot" id="mic-dot"></div>
-          <span id="mic-status">未开启</span>
+  <div class="product-body">
+    <aside class="mode-sidebar" aria-label="功能模式">
+      <div class="sidebar-caption">功能模式</div>
+      <nav class="mode-navigation">
+        <button class="mode-nav-item active" type="button" data-mode="chat" aria-current="page">
+          <span class="mode-nav-icon"><i class="bi bi-chat-square-dots"></i></span>
+          <span class="mode-nav-copy"><span class="mode-nav-title">智能对话</span></span>
+        </button>
+        <button class="mode-nav-item" type="button" data-mode="transcribe">
+          <span class="mode-nav-icon"><i class="bi bi-file-earmark-music"></i></span>
+          <span class="mode-nav-copy"><span class="mode-nav-title">音频转写</span></span>
+        </button>
+        <button class="mode-nav-item" type="button" data-mode="tts">
+          <span class="mode-nav-icon"><i class="bi bi-volume-up"></i></span>
+          <span class="mode-nav-copy"><span class="mode-nav-title">配音朗读</span></span>
+        </button>
+        <button class="mode-nav-item" type="button" data-mode="monitor">
+          <span class="mode-nav-icon"><i class="bi bi-ear"></i></span>
+          <span class="mode-nav-copy"><span class="mode-nav-title">监听模式</span></span>
+        </button>
+        <button class="mode-nav-item" type="button" data-mode="document">
+          <span class="mode-nav-icon"><i class="bi bi-file-earmark-text"></i></span>
+          <span class="mode-nav-copy"><span class="mode-nav-title">文档识别</span></span>
+        </button>
+      </nav>
+      <div class="sidebar-foot"><i class="bi bi-shield-check"></i><span>本地工作台<br>音视频数据由当前服务处理</span></div>
+    </aside>
+
+    <main class="page-canvas">
+      <section class="mode-page avatar-page active" id="page-chat" data-page="chat">
+        <div class="avatar-mode-grid">
+          <div class="avatar-slot" id="chat-stage-slot">
+            <section class="stage-card" id="avatar-stage">
+              <div class="card-heading">
+                <div class="heading-main"><div class="heading-icon"><i class="bi bi-person-video3"></i></div><div class="heading-title">数字人实时画面</div></div>
+                <div class="live-indicator">实时交互工作台</div>
+              </div>
+              <div class="video-section">
+                <div class="stage-placeholder"><div><div class="placeholder-orb"><i class="bi bi-person-video2"></i></div><strong>数字人画面等待连接</strong><span>点击右上角“连接数字人”开始实时会话</span></div></div>
+                <video id="video" autoplay playsinline></video>
+                <audio id="audio" autoplay style="display:none"></audio>
+                <div class="video-overlay"><div class="overlay-badge badge-rec" id="recording-indicator">录制中</div><div class="overlay-badge badge-vad" id="vad-badge" style="display:none">监听中</div></div>
+                <div class="vad-bar-wrap" id="vad-bars">
+                  <div class="vad-bar" id="b0"></div><div class="vad-bar" id="b1"></div><div class="vad-bar" id="b2"></div><div class="vad-bar" id="b3"></div>
+                  <div class="vad-bar" id="b4"></div><div class="vad-bar" id="b5"></div><div class="vad-bar" id="b6"></div><div class="vad-bar" id="b7"></div>
+                </div>
+              </div>
+            </section>
+          </div>
+          <section class="control-card chat-page-control">
+            <div class="control-head"><div><div class="control-kicker">Conversation</div><div class="control-title">交互控制台</div></div><span class="session-tag">REALTIME</span></div>
+            <div class="bottom-panel">
+              <div class="tab-pane active" id="pane-chat">
+                <div class="chat-messages" id="chat-messages"><div class="msg msg-system">欢迎使用灵听智声。连接数字人后，您可以输入文字、按住说话或开启持续对话。</div></div>
+                <div class="chat-bottom">
+                  <div class="chat-input-row">
+                    <textarea id="chat-message" rows="1" placeholder="输入您的问题，按 Enter 发送…"></textarea>
+                    <button class="btn btn-primary btn-icon" id="chat-send" title="发送消息" aria-label="发送消息"><i class="bi bi-send-fill"></i></button>
+                    <button class="btn btn-ghost btn-icon" id="interrupt-btn" title="打断播报" aria-label="打断播报"><i class="bi bi-skip-forward-fill"></i></button>
+                  </div>
+                  <div class="voice-row">
+                    <div class="voice-actions">
+                      <button class="btn btn-ghost" id="ptt-btn"><i class="bi bi-mic-fill"></i> 按住说话</button><span id="ptt-hint" style="font-size:10px;color:var(--text-muted)">松开发送</span><div class="vad-sep"></div>
+                      <button class="btn btn-ghost" id="vad-toggle"><i class="bi bi-soundwave"></i> 持续对话</button>
+                    </div>
+                    <div class="voice-settings">
+                      <label class="slider-wrap"><span>静音判定</span><input type="range" id="vad-silence" min="5" max="40" value="15"><span id="vad-silence-val">1.5s</span></label>
+                      <label class="slider-wrap"><span>识别灵敏度</span><input type="range" id="vad-threshold" min="1" max="30" value="8"><span id="vad-threshold-val">8</span></label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
-        <div class="stat-item">
-          <i class="bi bi-file-text" style="font-size:11px"></i>
-          <span id="monitor-count">0 条记录</span>
+      </section>
+
+      <section class="mode-page avatar-page" id="page-tts" data-page="tts">
+        <div class="avatar-mode-grid">
+          <div class="avatar-slot" id="tts-stage-slot"></div>
+          <section class="control-card tts-page-control">
+            <div class="control-head"><div><div class="control-kicker">Dubbing</div><div class="control-title">配音控制台</div></div><span class="session-tag">TTS</span></div>
+            <div class="bottom-panel">
+              <div class="tab-pane active" id="pane-tts">
+                <div class="tts-pane">
+                  <div class="mode-intro"><strong>数字人文本播报</strong><span>输入需要朗读的内容，系统将通过当前音色合成语音并驱动数字人口型。</span></div>
+                  <label for="message">播报内容</label>
+                  <textarea id="message" rows="8" placeholder="请输入希望数字人朗读的文字…"></textarea>
+                  <button class="btn btn-primary wide-action" id="echo-submit"><i class="bi bi-play-circle-fill"></i> 开始朗读</button>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
-        <div class="stat-item" id="kw-alert" style="display:none;color:var(--danger)">
-          <i class="bi bi-flag-fill" style="font-size:11px"></i>
-          <span id="kw-alert-text">检测到关键词，收集中…</span>
+      </section>
+
+      <section class="mode-page" id="page-transcribe" data-page="transcribe">
+        <div class="transcribe-layout">
+          <div class="transcribe-source-grid">
+            <section class="surface-card source-card">
+              <div class="surface-head"><div class="surface-title"><i class="bi bi-cloud-arrow-up"></i>上传音频</div><span class="surface-hint">单文件不超过 80 MB</span></div>
+              <div class="source-card-body">
+                <input id="audio-file-input" type="file" accept="audio/*,.wav,.mp3,.m4a,.aac,.ogg,.opus,.flac,.webm,.wma" hidden>
+                <label class="audio-dropzone" id="audio-dropzone" for="audio-file-input">
+                  <span class="dropzone-icon"><i class="bi bi-file-earmark-music"></i></span><strong>点击或拖拽音频文件到这里</strong><span>支持 WAV、MP3、M4A、AAC、FLAC、OGG、WebM 等格式</span>
+                </label>
+                <div class="audio-file-row"><div class="audio-file-name" id="audio-file-name"><i class="bi bi-paperclip"></i>尚未选择文件</div><button class="btn btn-primary" id="transcribe-upload-btn" type="button" disabled><i class="bi bi-magic"></i> 开始转写</button></div>
+              </div>
+            </section>
+            <section class="surface-card source-card">
+              <div class="surface-head"><div class="surface-title"><i class="bi bi-broadcast"></i>环境音转写</div><span class="surface-hint">自动分段识别</span></div>
+              <div class="source-card-body">
+                <div class="environment-panel">
+                  <div class="environment-orb" id="transcribe-env-orb"><i class="bi bi-mic"></i></div><strong>接收当前环境声音</strong>
+                  <p>开启后检测说话声音，静音约 1.5 秒时自动提交当前片段，并连续追加到转写结果。</p>
+                  <button class="btn btn-ghost" id="transcribe-env-toggle" type="button"><i class="bi bi-mic-fill"></i> 开始接收环境音</button>
+                  <div class="environment-state"><span class="environment-dot" id="transcribe-env-dot"></span><span id="transcribe-env-status">未开启</span></div>
+                </div>
+              </div>
+            </section>
+          </div>
+          <section class="surface-card transcript-card">
+            <div class="surface-head">
+              <div class="surface-title"><i class="bi bi-pencil-square"></i>转写结果</div>
+              <div class="transcript-actions"><span class="transcript-meta" id="transcript-meta">等待转写</span><button class="btn btn-ghost btn-sm" id="transcript-copy" type="button"><i class="bi bi-copy"></i> 复制</button><button class="btn btn-ghost btn-sm" id="transcript-clear" type="button"><i class="bi bi-trash3"></i> 清空</button></div>
+            </div>
+            <textarea class="transcript-editor" id="transcript-result" placeholder="识别文字将在这里显示。您可以直接点击并进行人工编辑、补充或校对。"></textarea>
+          </section>
         </div>
-      </div>
-      <div class="monitor-scroll" id="monitor-scroll">
-        <div style="color:var(--text-muted);font-size:13px;text-align:center;padding-top:24px">
-          开启监听后，转写内容将显示在这里
-        </div>
-      </div>
-      <div class="saved-clips" id="saved-clips-wrap" style="display:none">
-        <div class="saved-clips-title">已保存片段（点击复制文字）</div>
-        <div id="saved-clips-list"></div>
-      </div>
-    </div>
+      </section>
+
+      <section class="mode-page" id="page-monitor" data-page="monitor">
+        <section class="surface-card monitor-work-card">
+          <div class="surface-head"><div class="surface-title"><i class="bi bi-soundwave"></i>监听模式设置</div><span class="surface-hint">关键词触发 · 自动保存</span></div>
+          <div class="monitor-pane">
+            <div class="monitor-toolbar"><input type="text" id="monitor-keywords" placeholder="关键词，使用逗号分隔，例如：你好，再见"><button class="btn btn-ghost btn-sm" id="monitor-toggle"><i class="bi bi-ear"></i> 开始监听</button><button class="btn btn-ghost btn-sm" id="monitor-clear"><i class="bi bi-trash3"></i> 清空</button></div>
+            <div class="monitor-savepath"><label for="monitor-savedir">保存路径</label><input type="text" id="monitor-savedir" placeholder="默认 ./monitor_clips"><label for="monitor-window">前后窗口</label><input type="number" id="monitor-window" value="60" min="10" max="600" style="text-align:center"><label>秒</label></div>
+            <div class="monitor-statusbar"><div class="stat-item"><div class="mic-dot" id="mic-dot"></div><span id="mic-status">未开启</span></div><div class="stat-item"><i class="bi bi-file-earmark-text"></i><span id="monitor-count">0 条记录</span></div><div class="stat-item" id="kw-alert" style="display:none;color:var(--danger)"><i class="bi bi-flag-fill"></i><span id="kw-alert-text">检测到关键词，收集中…</span></div></div>
+            <div class="monitor-scroll" id="monitor-scroll"><div style="color:var(--text-muted);font-size:12px;text-align:center;padding-top:32px"><i class="bi bi-soundwave" style="display:block;font-size:24px;margin-bottom:8px"></i>开启监听后，实时转写内容将显示在这里</div></div>
+            <div class="saved-clips" id="saved-clips-wrap" style="display:none"><div class="saved-clips-title">已保存片段（点击复制文字）</div><div id="saved-clips-list"></div></div>
+          </div>
+        </section>
+      </section>
+
+      <section class="mode-page" id="page-document" data-page="document">
+        <section class="surface-card document-card">
+          <div class="document-controls">
+            <div class="field-select"><label for="document-language">文档语言</label><select id="document-language"><option>自动检测</option><option>简体中文</option><option>英语</option></select></div>
+            <div class="field-select"><label for="document-layout">识别方式</label><select id="document-layout"><option>保留原文档布局</option><option>仅提取正文文字</option></select></div>
+            <div class="field-select"><label for="document-output">输出格式</label><select id="document-output"><option>可编辑文本</option><option>结构化文档</option></select></div>
+          </div>
+          <div class="document-options"><div class="option-group"><strong>版面处理</strong><span class="option-pill">段落对齐</span><span>表格识别</span></div><div class="option-group"><strong>图片文字</strong><span class="option-pill">一并识别</span></div></div>
+          <div class="document-dropzone">
+            <div class="document-illustration" aria-hidden="true"><span class="doc-sheet back-left"></span><span class="doc-sheet back-right"></span><span class="doc-sheet front"></span></div>
+            <strong>添加需要识别的文档</strong><p>支持 DOCX、DOC、PDF、PPTX、XLSX、HTML、CSV、TXT 与常见图片格式</p>
+            <div class="document-actions"><button class="btn btn-ghost" type="button" disabled><i class="bi bi-folder-plus"></i> 添加文件夹</button><button class="btn btn-ghost" type="button" disabled><i class="bi bi-file-earmark-plus"></i> 添加文档</button><button class="btn btn-primary" type="button" disabled><i class="bi bi-stars"></i> 开始识别</button></div>
+            <span class="document-note">当前仅完成页面外形，文档 OCR 与解析功能将在后续接入</span>
+          </div>
+        </section>
+      </section>
+    </main>
   </div>
 </div>
 
@@ -371,7 +824,7 @@ input[type=range] { accent-color:var(--accent2); }
 function sid() { return String(document.getElementById('sessionid').value); }
 
 function addMsg(text, type) {
-  const cls = type === 'user' ? 'msg-user' : 'msg-system';
+  const cls = type === 'user' ? 'msg-user' : type === 'avatar' ? 'msg-avatar' : 'msg-system';
   const el = document.createElement('div');
   el.className = 'msg ' + cls;
   el.textContent = text;
@@ -486,6 +939,7 @@ $(document).ready(function () {
   function setStatus(s) {
     $('#connection-status').removeClass('connected connecting').addClass(s === 'disconnected' ? '' : s);
     $('#status-text').text({ connected:'已连接', connecting:'连接中…', disconnected:'未连接' }[s] || '未连接');
+    $('.video-section').toggleClass('has-stream', s === 'connected');
   }
   $('#start').click(function () {
     setStatus('connecting'); start(); $(this).hide(); $('#stop').show();
@@ -511,14 +965,22 @@ $(document).ready(function () {
     .then(r => { if(r.ok) { $(this).prop('disabled',true); $('#btn_start_record').prop('disabled',false); $('#recording-indicator').removeClass('active'); }});
   });
 
-  // ── Tabs
-  $('.tab-btn').click(function () {
-    $('.tab-btn').removeClass('active'); $('.tab-pane').removeClass('active');
-    $(this).addClass('active');
-    $('#pane-' + $(this).data('tab')).addClass('active');
-    if ($(this).data('tab') !== 'chat'    && vadActive)     stopVAD();
-    if ($(this).data('tab') !== 'monitor' && monitorActive) stopMonitor();
-  });
+  // ── 左侧模式导航：每种模式使用独立页面；数字人舞台在对话/朗读间复用
+  function activateMode(mode) {
+    $('.mode-nav-item').removeClass('active').removeAttr('aria-current');
+    $('.mode-nav-item[data-mode="' + mode + '"]').addClass('active').attr('aria-current', 'page');
+    $('.mode-page').removeClass('active');
+    $('#page-' + mode).addClass('active');
+
+    if (mode === 'chat') $('#chat-stage-slot').append($('#avatar-stage'));
+    if (mode === 'tts')  $('#tts-stage-slot').append($('#avatar-stage'));
+    $('.topbar-controls').toggleClass('avatar-controls-hidden', mode !== 'chat' && mode !== 'tts');
+    if (mode !== 'chat' && vadActive) stopVAD();
+    if (mode !== 'monitor' && monitorActive) stopMonitor();
+    if (mode !== 'transcribe' && transcribeEnvActive) stopTranscribeEnvironment();
+    $('.page-canvas').scrollTop(0);
+  }
+  $('.mode-nav-item').click(function () { activateMode($(this).data('mode')); });
 
   // ── 打断
   $('#interrupt-btn').click(() =>
@@ -641,6 +1103,178 @@ $(document).ready(function () {
   }
 
   $('#vad-toggle').click(() => vadActive ? stopVAD() : startVAD());
+
+  // ═══════════════════════════════════════════════
+  // 音频转写：文件上传 + 环境音自动分段
+  // ═══════════════════════════════════════════════
+  let selectedAudioFile = null;
+  let transcribeEnvActive=false, transcribeEnvStream=null, transcribeEnvAudioCtx=null;
+  let transcribeEnvAnalyser=null, transcribeEnvInterval=null, transcribeEnvRecorder=null;
+  let transcribeEnvSpeaking=false, transcribeEnvSilenceTimer=null, transcribeEnvFinalizing=false;
+
+  function readableFileSize(bytes) {
+    if (bytes < 1024 * 1024) return Math.max(1, Math.round(bytes / 1024)) + ' KB';
+    return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+  }
+
+  function chooseAudioFile(file) {
+    selectedAudioFile = file || null;
+    if (!file) {
+      $('#audio-file-name').removeClass('ready').html('<i class="bi bi-paperclip"></i>尚未选择文件');
+      $('#transcribe-upload-btn').prop('disabled', true);
+      return;
+    }
+    if (file.size > 80 * 1024 * 1024) {
+      selectedAudioFile = null;
+      $('#audio-file-name').removeClass('ready').html('<i class="bi bi-exclamation-circle"></i>文件超过 80 MB');
+      $('#transcribe-upload-btn').prop('disabled', true);
+      return;
+    }
+    $('#audio-file-name').addClass('ready').html('<i class="bi bi-file-earmark-music"></i>' + $('<div>').text(file.name).html() + ' · ' + readableFileSize(file.size));
+    $('#transcribe-upload-btn').prop('disabled', false);
+  }
+
+  function appendTranscript(text, sourceLabel, details) {
+    const editor = $('#transcript-result');
+    const current = editor.val().trimEnd();
+    editor.val(current ? current + '\n' + text : text);
+    editor.scrollTop(editor[0].scrollHeight);
+    $('#transcript-meta').text(sourceLabel + (details ? ' · ' + details : ''));
+  }
+
+  function requestTranscription(file, sourceLabel, onFinished) {
+    const fd = new FormData();
+    fd.append('file', file, file.name || 'environment.webm');
+    $('#transcript-meta').text(sourceLabel + ' · 正在识别…');
+    return fetch('/transcribe_audio', { method:'POST', body:fd })
+      .then(r => r.json())
+      .then(data => {
+        if (data.code !== 0 || !data.data || !data.data.recognized) {
+          throw new Error(data.msg || '转写失败');
+        }
+        const info = [];
+        if (data.data.duration) info.push('音频 ' + data.data.duration + 's');
+        if (data.data.elapsed) info.push('耗时 ' + data.data.elapsed + 's');
+        appendTranscript(data.data.recognized, sourceLabel, info.join(' · '));
+      })
+      .catch(err => {
+        console.error(err);
+        $('#transcript-meta').text(sourceLabel + ' · ' + err.message);
+      })
+      .finally(() => { if (onFinished) onFinished(); });
+  }
+
+  $('#audio-file-input').on('change', function () { chooseAudioFile(this.files && this.files[0]); });
+  $('#transcribe-upload-btn').click(function () {
+    if (!selectedAudioFile) return;
+    const button = $(this);
+    button.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> 转写中');
+    requestTranscription(selectedAudioFile, selectedAudioFile.name, () => {
+      button.prop('disabled', false).html('<i class="bi bi-magic"></i> 开始转写');
+    });
+  });
+
+  const audioDropzone = document.getElementById('audio-dropzone');
+  ['dragenter','dragover'].forEach(name => audioDropzone.addEventListener(name, e => {
+    e.preventDefault(); audioDropzone.classList.add('dragging');
+  }));
+  ['dragleave','drop'].forEach(name => audioDropzone.addEventListener(name, e => {
+    e.preventDefault(); audioDropzone.classList.remove('dragging');
+  }));
+  audioDropzone.addEventListener('drop', e => {
+    const file = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (file) chooseAudioFile(file);
+  });
+
+  $('#transcript-copy').click(function () {
+    const text = $('#transcript-result').val();
+    if (!text) return;
+    const fallbackCopy = () => {
+      const editor = document.getElementById('transcript-result');
+      editor.focus(); editor.select(); document.execCommand('copy');
+    };
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).catch(fallbackCopy);
+    else fallbackCopy();
+    $('#transcript-meta').text('转写文字已复制');
+  });
+  $('#transcript-clear').click(function () {
+    $('#transcript-result').val(''); $('#transcript-meta').text('等待转写');
+  });
+
+  function setTranscribeEnvironmentState(state, text) {
+    $('#transcribe-env-dot').removeClass('active speaking').addClass(state === 'active' ? 'active' : state === 'speaking' ? 'speaking' : '');
+    $('#transcribe-env-status').text(text);
+  }
+
+  function startTranscribeEnvironment() {
+    navigator.mediaDevices.getUserMedia({ audio:true, video:false })
+    .then(stream => {
+      transcribeEnvStream = stream;
+      transcribeEnvAudioCtx = new AudioContext();
+      transcribeEnvAnalyser = transcribeEnvAudioCtx.createAnalyser();
+      transcribeEnvAnalyser.fftSize = 256;
+      transcribeEnvAudioCtx.createMediaStreamSource(stream).connect(transcribeEnvAnalyser);
+      transcribeEnvActive = true;
+      $('#transcribe-env-toggle').removeClass('btn-ghost').addClass('btn-danger').html('<i class="bi bi-stop-fill"></i> 停止接收');
+      $('#transcribe-env-orb').addClass('active').html('<i class="bi bi-soundwave"></i>');
+      setTranscribeEnvironmentState('active', '正在接收，等待说话…');
+
+      const buffer = new Float32Array(transcribeEnvAnalyser.fftSize);
+      transcribeEnvInterval = setInterval(() => {
+        transcribeEnvAnalyser.getFloatTimeDomainData(buffer);
+        const rms = Math.sqrt(buffer.reduce((sum,value) => sum + value * value, 0) / buffer.length);
+        if (rms > 0.008) {
+          if (!transcribeEnvSpeaking && !transcribeEnvFinalizing) {
+            transcribeEnvSpeaking = true;
+            const utteranceChunks = [];
+            transcribeEnvRecorder = new MediaRecorder(stream);
+            transcribeEnvRecorder.ondataavailable = e => { if (e.data.size > 0) utteranceChunks.push(e.data); };
+            transcribeEnvRecorder.onstop = () => {
+              transcribeEnvFinalizing = false;
+              if (!transcribeEnvActive || !utteranceChunks.length) return;
+              const blob = new Blob(utteranceChunks, { type:'audio/webm' });
+              setTranscribeEnvironmentState('active', '片段识别中，继续监听…');
+              requestTranscription(blob, '环境音', () => {
+                if (transcribeEnvActive && !transcribeEnvSpeaking)
+                  setTranscribeEnvironmentState('active', '正在接收，等待说话…');
+              });
+            };
+            transcribeEnvRecorder.start(100);
+            setTranscribeEnvironmentState('speaking', '检测到声音，正在收录…');
+          }
+          clearTimeout(transcribeEnvSilenceTimer);
+          transcribeEnvSilenceTimer = setTimeout(endTranscribeEnvironmentUtterance, 1500);
+        }
+      }, 80);
+    })
+    .catch(err => {
+      console.error(err);
+      setTranscribeEnvironmentState('off', '无法访问麦克风，请检查浏览器权限');
+    });
+  }
+
+  function endTranscribeEnvironmentUtterance() {
+    if (!transcribeEnvSpeaking || !transcribeEnvRecorder) return;
+    transcribeEnvSpeaking = false;
+    transcribeEnvFinalizing = true;
+    setTranscribeEnvironmentState('active', '正在提交当前片段…');
+    if (transcribeEnvRecorder.state !== 'inactive') transcribeEnvRecorder.stop();
+  }
+
+  function stopTranscribeEnvironment() {
+    transcribeEnvActive = false;
+    clearInterval(transcribeEnvInterval); clearTimeout(transcribeEnvSilenceTimer);
+    if (transcribeEnvRecorder && transcribeEnvRecorder.state !== 'inactive') transcribeEnvRecorder.stop();
+    if (transcribeEnvStream) transcribeEnvStream.getTracks().forEach(track => track.stop());
+    if (transcribeEnvAudioCtx) transcribeEnvAudioCtx.close();
+    transcribeEnvStream = transcribeEnvAudioCtx = transcribeEnvAnalyser = transcribeEnvRecorder = null;
+    transcribeEnvSpeaking = transcribeEnvFinalizing = false;
+    $('#transcribe-env-toggle').removeClass('btn-danger').addClass('btn-ghost').html('<i class="bi bi-mic-fill"></i> 开始接收环境音');
+    $('#transcribe-env-orb').removeClass('active').html('<i class="bi bi-mic"></i>');
+    setTranscribeEnvironmentState('off', '未开启');
+  }
+
+  $('#transcribe-env-toggle').click(() => transcribeEnvActive ? stopTranscribeEnvironment() : startTranscribeEnvironment());
 
   // ═══════════════════════════════════════════════
   // 监听模式
@@ -846,6 +1480,7 @@ $(document).ready(function () {
   window.addEventListener('beforeunload', () => {
     if (vadActive) stopVAD();
     if (monitorActive) stopMonitor();
+    if (transcribeEnvActive) stopTranscribeEnvironment();
   });
 });
 </script>

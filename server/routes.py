@@ -7,11 +7,11 @@ import json
 import numpy as np
 import asyncio
 import subprocess
+from pathlib import Path
 from aiohttp import web
 
 from utils.logger import logger
 
-import subprocess
 import tempfile
 import os
 import qwen3asr_service as asr_svc
@@ -43,6 +43,52 @@ from server.session_manager import session_manager
 def get_session(request, sessionid: str):
     """从 app 中获取 session 实例"""
     return session_manager.get_session(sessionid)
+
+
+MAX_TRANSCRIBE_BYTES = 80 * 1024 * 1024
+
+
+def _uploaded_audio_suffix(filename: str) -> str:
+    """只保留安全的扩展名；实际格式仍由 ffmpeg 根据文件内容识别。"""
+    suffix = Path(filename or "").suffix.lower()
+    if suffix and len(suffix) <= 10 and suffix[1:].isalnum():
+        return suffix
+    return ".audio"
+
+
+def _convert_audio_to_wav(source_path: str, wav_path: str):
+    """调用 ffmpeg，将常见音频容器统一为 16 kHz 单声道 WAV。"""
+    result = subprocess.run(
+        [
+            "ffmpeg", "-y", "-i", source_path,
+            "-vn", "-ar", "16000", "-ac", "1", "-f", "wav", wav_path,
+        ],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        logger.warning("Audio conversion failed: %s", result.stderr[-1200:])
+        raise ValueError("无法解析该音频文件，请确认文件格式正确且未损坏")
+
+
+def _probe_audio_duration(wav_path: str):
+    """读取转换后音频时长，失败时返回 None，不影响转写。"""
+    try:
+        result = subprocess.run(
+            [
+                "ffprobe", "-v", "quiet", "-print_format", "json",
+                "-show_streams", wav_path,
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        streams = json.loads(result.stdout).get("streams", [])
+        if streams:
+            return round(float(streams[0].get("duration", 0)), 2)
+    except (subprocess.SubprocessError, ValueError, TypeError, json.JSONDecodeError):
+        logger.warning("Unable to probe audio duration: %s", wav_path)
+    return None
 
 
 # ─── 路由处理函数 ──────────────────────────────────────────────────────────
@@ -218,7 +264,69 @@ async def humanaudio_monitor(request):
     except Exception as e:
         logger.exception('humanaudio_monitor exception:')
         return json_error(str(e))
-    
+
+
+async def transcribe_audio(request):
+    """音频转写工作台：接收上传文件或浏览器录音，仅返回可编辑的 ASR 文字。"""
+    raw_path = None
+    wav_path = None
+    try:
+        form = await request.post()
+        fileobj = form.get("file")
+        if fileobj is None or not hasattr(fileobj, "file"):
+            return json_error("请选择需要转写的音频文件")
+
+        filebytes = fileobj.file.read()
+        if not filebytes:
+            return json_error("上传的音频文件为空")
+        if len(filebytes) > MAX_TRANSCRIBE_BYTES:
+            return json_error("音频文件不能超过 80 MB")
+
+        filename = Path(getattr(fileobj, "filename", "audio") or "audio").name
+        suffix = _uploaded_audio_suffix(filename)
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as raw_file:
+            raw_file.write(filebytes)
+            raw_path = raw_file.name
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as wav_file:
+            wav_path = wav_file.name
+
+        started_at = time.perf_counter()
+        loop = asyncio.get_running_loop()
+        _convert_audio_to_wav(raw_path, wav_path)
+        converted_at = time.perf_counter()
+        duration = _probe_audio_duration(wav_path)
+        recognized_text = await loop.run_in_executor(None, asr_svc.transcribe, wav_path)
+        finished_at = time.perf_counter()
+
+        logger.info(
+            "Audio transcription filename=%s size=%d duration=%s ffmpeg=%.3fs ASR=%.3fs",
+            filename,
+            len(filebytes),
+            duration,
+            converted_at - started_at,
+            finished_at - converted_at,
+        )
+
+        if not recognized_text:
+            return json_error("ASR 识别结果为空")
+
+        return json_ok({
+            "recognized": recognized_text,
+            "filename": filename,
+            "duration": duration,
+            "elapsed": round(finished_at - started_at, 2),
+        })
+    except ValueError as e:
+        return json_error(str(e))
+    except Exception as e:
+        logger.exception('transcribe_audio exception:')
+        return json_error(str(e))
+    finally:
+        for path in (raw_path, wav_path):
+            if path and os.path.exists(path):
+                os.unlink(path)
+
+
 async def save_monitor_clip(request):
     """接收前端发来的片段文字，写入服务器本地文件"""
     try:
@@ -336,6 +444,7 @@ def setup_routes(app):
     app.router.add_post("/human", human)
     app.router.add_post("/humanaudio", humanaudio)
     app.router.add_post("/humanaudio_monitor", humanaudio_monitor)
+    app.router.add_post("/transcribe_audio", transcribe_audio)
     app.router.add_post("/save_monitor_clip", save_monitor_clip)
     app.router.add_post("/append_monitor_log", append_monitor_log)
     app.router.add_post("/get_reply", get_reply)

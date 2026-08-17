@@ -53,6 +53,15 @@ def parse_args():
     parser.add_argument('--REF_TEXT', type=str, default="是啊。今天天气真好！你吃早饭了吗？吃的是什么东西？")
     parser.add_argument('--TTS_SERVER', type=str, default='http://localhost:50000')
 
+    # ─── 文本翻译 ─────────────────────────────────────────
+    parser.add_argument('--TRANSLATION_SERVER', type=str,
+                        default='http://113.98.61.52:11434',
+                        help='Ollama 翻译服务地址（可带或不带 /v1）')
+    parser.add_argument('--TRANSLATION_MODEL', type=str, default='translategemma:latest',
+                        help='Ollama TranslateGemma 模型名')
+    parser.add_argument('--TRANSLATION_TIMEOUT', type=float, default=120.0,
+                        help='单次文本翻译请求超时（秒）')
+
     # ─── 传输 ─────────────────────────────────────────────────────────
     parser.add_argument('--transport', type=str, default='webrtc',
                         help="output: rtcpush/webrtc/rtmp/virtualcam")

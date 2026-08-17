@@ -46,6 +46,7 @@ def get_session(request, sessionid: str):
 
 
 MAX_TRANSCRIBE_BYTES = 80 * 1024 * 1024
+MAX_TRANSLATION_CHARS = 20_000
 
 
 def _uploaded_audio_suffix(filename: str) -> str:
@@ -327,6 +328,39 @@ async def transcribe_audio(request):
                 os.unlink(path)
 
 
+async def translate_text(request):
+    """文本翻译：单次调用 TranslateGemma，不保留对话历史。"""
+    try:
+        params = await request.json()
+        text = str(params.get("text", "")).strip()
+        source_language = str(params.get("source_language", "")).strip()
+        target_language = str(params.get("target_language", "")).strip()
+
+        if not text:
+            return json_error("请输入需要翻译的文字")
+        if len(text) > MAX_TRANSLATION_CHARS:
+            return json_error(f"单次翻译不能超过 {MAX_TRANSLATION_CHARS} 个字符")
+
+        translation_service = request.app.get("translation_service")
+        if translation_service is None:
+            return json_error("翻译服务未配置")
+
+        loop = asyncio.get_running_loop()
+        result = await loop.run_in_executor(
+            None,
+            translation_service.translate,
+            text,
+            source_language,
+            target_language,
+        )
+        return json_ok(result)
+    except (ValueError, TypeError) as e:
+        return json_error(str(e))
+    except Exception as e:
+        logger.exception('translate_text exception:')
+        return json_error(f"翻译失败：{e}")
+
+
 async def save_monitor_clip(request):
     """接收前端发来的片段文字，写入服务器本地文件"""
     try:
@@ -445,6 +479,7 @@ def setup_routes(app):
     app.router.add_post("/humanaudio", humanaudio)
     app.router.add_post("/humanaudio_monitor", humanaudio_monitor)
     app.router.add_post("/transcribe_audio", transcribe_audio)
+    app.router.add_post("/translate_text", translate_text)
     app.router.add_post("/save_monitor_clip", save_monitor_clip)
     app.router.add_post("/append_monitor_log", append_monitor_log)
     app.router.add_post("/get_reply", get_reply)

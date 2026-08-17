@@ -37,6 +37,7 @@ from aiortc.rtcrtpsender import RTCRtpSender
 from server.webrtc import HumanPlayer
 from avatars.base_avatar import BaseAvatar
 from llm import llm_response
+from translator import TranslationService
 import registry
 from server.routes import setup_routes
 from server.rtc_manager import RTCManager
@@ -153,6 +154,11 @@ def main():
     #############################################################################
     appasync = web.Application(client_max_size=1024**2*100)
     appasync["llm_response"] = llm_response
+    appasync["translation_service"] = TranslationService(
+        base_url=opt.TRANSLATION_SERVER,
+        model=opt.TRANSLATION_MODEL,
+        timeout=opt.TRANSLATION_TIMEOUT,
+    )
 
     appasync.on_shutdown.append(on_shutdown)
     appasync.router.add_post("/offer", offer)

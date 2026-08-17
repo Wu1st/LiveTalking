@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <link rel="icon" href="data:;base64,iVBORw0KGgo=">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>灵听智声——基于多语种 ASR 微调与热词触发的实时数字人</title>
+<title>灵听智声</title>
 <link rel="preload" href="./fonts/SourceHanSansCN-VF.woff2" as="font" type="font/woff2" crossorigin>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
@@ -393,7 +393,7 @@ input[type=range] { accent-color:var(--primary); }
 }
 
 /* ══════════════════════════════════════════════════════════════
-   五模式工作台：左侧导航 + 右侧独立页面
+   六模式工作台：左侧导航 + 右侧独立页面
    ══════════════════════════════════════════════════════════════ */
 .product-body {
   flex:1; min-height:0; display:flex; overflow:hidden;
@@ -426,13 +426,6 @@ input[type=range] { accent-color:var(--primary); }
 .mode-nav-item.active .mode-nav-icon { color:var(--primary); background:#fff; box-shadow:0 4px 12px rgba(49,87,213,.10); }
 .mode-nav-copy { min-width:0; display:flex; align-items:center; }
 .mode-nav-title { font-size:16px; font-weight:700; line-height:1.25; letter-spacing:.015em; }
-.sidebar-foot {
-  margin-top:auto; padding:14px; display:flex; gap:9px; align-items:flex-start;
-  color:#8994a8; background:#f7f9fc; border:1px solid var(--border); border-radius:12px;
-  font-size:10px; line-height:1.55;
-}
-.sidebar-foot i { color:var(--primary); font-size:14px; margin-top:1px; }
-
 .page-canvas {
   flex:1; min-width:0; min-height:0; padding:10px 12px 12px; overflow:auto;
   background:
@@ -543,6 +536,52 @@ input[type=range] { accent-color:var(--primary); }
 .monitor-work-card .monitor-scroll { margin:12px 14px 0; padding:10px; border:1px solid var(--border); border-radius:12px; background:#fbfcfe; }
 .monitor-work-card .monitor-statusbar { padding:10px 12px; font-size:11px; }
 
+/* 文本翻译 */
+.translation-work-card { flex:1; min-height:590px; padding:24px 26px 22px; display:flex; flex-direction:column; }
+.translation-toolbar {
+  display:grid; grid-template-columns:minmax(210px,1fr) 44px minmax(210px,1fr);
+  align-items:end; gap:14px; padding-bottom:20px; border-bottom:1px solid var(--border);
+}
+.translation-language { display:flex; flex-direction:column; gap:8px; }
+.translation-language label { color:#6f7b90; font-size:12px; font-weight:680; }
+.translation-language select {
+  width:100%; height:48px; padding:0 15px; border:1px solid var(--border-strong);
+  border-radius:11px; background:#fff; color:#2d3951; font-family:inherit; font-size:14px;
+  outline:none; transition:border-color .2s,box-shadow .2s;
+}
+.translation-language select:focus { border-color:#91a7ef; box-shadow:0 0 0 4px rgba(49,87,213,.07); }
+.language-swap {
+  width:44px; height:44px; margin-bottom:2px; display:grid; place-items:center;
+  border:1px solid #d8e1f3; border-radius:50%; color:var(--primary); background:#f7f9ff;
+  font-size:17px; cursor:pointer; transition:transform .2s,background .2s,box-shadow .2s;
+}
+.language-swap:hover { transform:rotate(180deg); background:#edf2ff; box-shadow:0 6px 16px rgba(49,87,213,.12); }
+.translation-editor-grid {
+  flex:1; min-height:360px; display:grid; grid-template-columns:1fr 1fr; margin-top:20px;
+  border:1px solid var(--border); border-radius:16px; overflow:hidden; background:#fff;
+}
+.translation-panel { min-width:0; display:flex; flex-direction:column; }
+.translation-panel + .translation-panel { border-left:1px solid var(--border); background:#fbfcff; }
+.translation-panel-head {
+  min-height:52px; padding:0 16px; display:flex; align-items:center; justify-content:space-between;
+  gap:12px; color:#3b4760; font-size:13px; font-weight:700; border-bottom:1px solid #edf0f5;
+}
+.translation-panel-tools { display:flex; align-items:center; gap:8px; color:#97a1b2; font-size:11px; font-weight:500; }
+.translation-icon-btn {
+  width:32px; height:32px; padding:0; display:grid; place-items:center; border:0; border-radius:8px;
+  color:#778399; background:transparent; cursor:pointer; transition:color .2s,background .2s;
+}
+.translation-icon-btn:hover { color:var(--primary); background:var(--primary-soft); }
+.translation-editor {
+  flex:1; min-height:285px; width:100%; padding:20px; resize:none; border:0; outline:0;
+  color:#273249; background:transparent; font-family:inherit; font-size:15px; line-height:1.85;
+}
+.translation-editor::placeholder { color:#a8b1c0; }
+.translation-footer { min-height:58px; padding-top:16px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.translation-status { display:flex; align-items:center; gap:7px; color:#8792a5; font-size:12px; }
+.translation-status i { color:var(--primary); }
+.translation-submit { min-width:150px; min-height:42px; }
+
 /* 文档识别外形 */
 .document-card { flex:1; min-height:610px; padding:28px 30px 30px; display:flex; flex-direction:column; }
 .document-controls { display:grid; grid-template-columns:repeat(3,minmax(180px,235px)); gap:10px; }
@@ -590,7 +629,7 @@ input[type=range] { accent-color:var(--primary); }
   .app-shell { min-height:100vh; height:auto; }
   .product-body { flex-direction:column; overflow:visible; }
   .mode-sidebar { width:100%; padding:9px 12px; border-right:0; border-bottom:1px solid var(--border); }
-  .sidebar-caption,.sidebar-foot { display:none; }
+  .sidebar-caption { display:none; }
   .mode-navigation { flex-direction:row; overflow-x:auto; gap:6px; }
   .mode-nav-item { min-width:132px; width:auto; min-height:44px; padding:0 12px; }
   .mode-nav-item.active { box-shadow:inset 0 -3px 0 var(--primary); }
@@ -602,6 +641,8 @@ input[type=range] { accent-color:var(--primary); }
   .avatar-mode-grid .stage-card { height:520px; }
   .avatar-mode-grid .control-card { height:620px; }
   .transcribe-source-grid { grid-template-columns:1fr; }
+  .translation-editor-grid { grid-template-columns:1fr; }
+  .translation-panel + .translation-panel { border-left:0; border-top:1px solid var(--border); }
   .document-controls { grid-template-columns:1fr; }
 }
 @media (max-width:620px) {
@@ -618,6 +659,13 @@ input[type=range] { accent-color:var(--primary); }
   .transcript-actions .btn i { font-size:13px; }
   .surface-head { padding:0 14px; }
   .source-card-body { padding:14px; }
+  .translation-work-card { min-height:720px; padding:18px 14px; }
+  .translation-toolbar { grid-template-columns:1fr 40px 1fr; gap:8px; }
+  .translation-language select { padding:0 9px; font-size:12px; }
+  .language-swap { width:38px; height:38px; }
+  .translation-editor { min-height:190px; padding:15px; font-size:13px; }
+  .translation-footer { align-items:stretch; flex-direction:column; }
+  .translation-submit { width:100%; }
   .document-card { padding:20px 16px; }
   .document-options { align-items:flex-start; flex-direction:column; gap:10px; }
   .document-actions { flex-wrap:wrap; justify-content:center; }
@@ -663,6 +711,10 @@ input[type=range] { accent-color:var(--primary); }
           <span class="mode-nav-icon"><i class="bi bi-volume-up"></i></span>
           <span class="mode-nav-copy"><span class="mode-nav-title">配音朗读</span></span>
         </button>
+        <button class="mode-nav-item" type="button" data-mode="translate">
+          <span class="mode-nav-icon"><i class="bi bi-translate"></i></span>
+          <span class="mode-nav-copy"><span class="mode-nav-title">文本翻译</span></span>
+        </button>
         <button class="mode-nav-item" type="button" data-mode="monitor">
           <span class="mode-nav-icon"><i class="bi bi-ear"></i></span>
           <span class="mode-nav-copy"><span class="mode-nav-title">监听模式</span></span>
@@ -672,7 +724,6 @@ input[type=range] { accent-color:var(--primary); }
           <span class="mode-nav-copy"><span class="mode-nav-title">文档识别</span></span>
         </button>
       </nav>
-      <div class="sidebar-foot"><i class="bi bi-shield-check"></i><span>本地工作台<br>音视频数据由当前服务处理</span></div>
     </aside>
 
     <main class="page-canvas">
@@ -682,7 +733,6 @@ input[type=range] { accent-color:var(--primary); }
             <section class="stage-card" id="avatar-stage">
               <div class="card-heading">
                 <div class="heading-main"><div class="heading-icon"><i class="bi bi-person-video3"></i></div><div class="heading-title">数字人实时画面</div></div>
-                <div class="live-indicator">实时交互工作台</div>
               </div>
               <div class="video-section">
                 <div class="stage-placeholder"><div><div class="placeholder-orb"><i class="bi bi-person-video2"></i></div><strong>数字人画面等待连接</strong><span>点击右上角“连接数字人”开始实时会话</span></div></div>
@@ -697,10 +747,10 @@ input[type=range] { accent-color:var(--primary); }
             </section>
           </div>
           <section class="control-card chat-page-control">
-            <div class="control-head"><div><div class="control-kicker">Conversation</div><div class="control-title">交互控制台</div></div><span class="session-tag">REALTIME</span></div>
+            <div class="control-head"><div><div class="control-kicker">Conversation</div><div class="control-title">交互控制台</div></div></div>
             <div class="bottom-panel">
               <div class="tab-pane active" id="pane-chat">
-                <div class="chat-messages" id="chat-messages"><div class="msg msg-system">欢迎使用灵听智声。连接数字人后，您可以输入文字、按住说话或开启持续对话。</div></div>
+                <div class="chat-messages" id="chat-messages"><div class="msg msg-system">欢迎使用。连接数字人后，您可以输入文字、按住说话或开启持续对话。</div></div>
                 <div class="chat-bottom">
                   <div class="chat-input-row">
                     <textarea id="chat-message" rows="1" placeholder="输入您的问题，按 Enter 发送…"></textarea>
@@ -728,7 +778,7 @@ input[type=range] { accent-color:var(--primary); }
         <div class="avatar-mode-grid">
           <div class="avatar-slot" id="tts-stage-slot"></div>
           <section class="control-card tts-page-control">
-            <div class="control-head"><div><div class="control-kicker">Dubbing</div><div class="control-title">配音控制台</div></div><span class="session-tag">TTS</span></div>
+            <div class="control-head"><div><div class="control-kicker">Dubbing</div><div class="control-title">配音控制台</div></div></div>
             <div class="bottom-panel">
               <div class="tab-pane active" id="pane-tts">
                 <div class="tts-pane">
@@ -747,7 +797,7 @@ input[type=range] { accent-color:var(--primary); }
         <div class="transcribe-layout">
           <div class="transcribe-source-grid">
             <section class="surface-card source-card">
-              <div class="surface-head"><div class="surface-title"><i class="bi bi-cloud-arrow-up"></i>上传音频</div><span class="surface-hint">单文件不超过 80 MB</span></div>
+              <div class="surface-head"><div class="surface-title"><i class="bi bi-cloud-arrow-up"></i>上传音频</div></div>
               <div class="source-card-body">
                 <input id="audio-file-input" type="file" accept="audio/*,.wav,.mp3,.m4a,.aac,.ogg,.opus,.flac,.webm,.wma" hidden>
                 <label class="audio-dropzone" id="audio-dropzone" for="audio-file-input">
@@ -757,11 +807,11 @@ input[type=range] { accent-color:var(--primary); }
               </div>
             </section>
             <section class="surface-card source-card">
-              <div class="surface-head"><div class="surface-title"><i class="bi bi-broadcast"></i>环境音转写</div><span class="surface-hint">自动分段识别</span></div>
+              <div class="surface-head"><div class="surface-title"><i class="bi bi-broadcast"></i>环境音转写</div></div>
               <div class="source-card-body">
                 <div class="environment-panel">
                   <div class="environment-orb" id="transcribe-env-orb"><i class="bi bi-mic"></i></div><strong>接收当前环境声音</strong>
-                  <p>开启后检测说话声音，静音约 1.5 秒时自动提交当前片段，并连续追加到转写结果。</p>
+                  <p>开启后自动检测</p>
                   <button class="btn btn-ghost" id="transcribe-env-toggle" type="button"><i class="bi bi-mic-fill"></i> 开始接收环境音</button>
                   <div class="environment-state"><span class="environment-dot" id="transcribe-env-dot"></span><span id="transcribe-env-status">未开启</span></div>
                 </div>
@@ -776,6 +826,45 @@ input[type=range] { accent-color:var(--primary); }
             <textarea class="transcript-editor" id="transcript-result" placeholder="识别文字将在这里显示。您可以直接点击并进行人工编辑、补充或校对。"></textarea>
           </section>
         </div>
+      </section>
+
+      <section class="mode-page" id="page-translate" data-page="translate">
+        <section class="surface-card translation-work-card">
+          <div class="translation-toolbar">
+            <div class="translation-language">
+              <label for="translation-source-language">输入语种</label>
+              <select id="translation-source-language">
+                <option value="auto" selected>自动检测</option>
+                <option value="zh-Hans">中文（简体）</option>
+                <option value="zh-Hant">中文（繁体）</option>
+                <option value="en">英语</option>
+              </select>
+            </div>
+            <button class="language-swap" id="translation-swap" type="button" title="交换语种" aria-label="交换输入与输出语种"><i class="bi bi-arrow-left-right"></i></button>
+            <div class="translation-language">
+              <label for="translation-target-language">输出语种</label>
+              <select id="translation-target-language">
+                <option value="zh-Hans">中文（简体）</option>
+                <option value="zh-Hant">中文（繁体）</option>
+                <option value="en" selected>英语</option>
+              </select>
+            </div>
+          </div>
+          <div class="translation-editor-grid">
+            <div class="translation-panel">
+              <div class="translation-panel-head"><span>原文</span><div class="translation-panel-tools"><span id="translation-source-count">0 / 20000</span><button class="translation-icon-btn" id="translation-source-clear" type="button" title="清空原文" aria-label="清空原文"><i class="bi bi-trash3"></i></button></div></div>
+              <textarea class="translation-editor" id="translation-source-text" maxlength="20000" placeholder="请输入或粘贴需要翻译的文字…"></textarea>
+            </div>
+            <div class="translation-panel">
+              <div class="translation-panel-head"><span>译文</span><div class="translation-panel-tools"><button class="translation-icon-btn" id="translation-copy" type="button" title="复制译文" aria-label="复制译文"><i class="bi bi-copy"></i></button></div></div>
+              <textarea class="translation-editor" id="translation-result" placeholder="翻译结果将在这里显示，您也可以继续编辑。"></textarea>
+            </div>
+          </div>
+          <div class="translation-footer">
+            <div class="translation-status" id="translation-status"><i class="bi bi-shield-check"></i><span>独立翻译请求，不保留对话历史</span></div>
+            <button class="btn btn-primary translation-submit" id="translation-submit" type="button"><i class="bi bi-translate"></i> 开始翻译</button>
+          </div>
+        </section>
       </section>
 
       <section class="mode-page" id="page-monitor" data-page="monitor">
@@ -1010,6 +1099,151 @@ $(document).ready(function () {
     const text = $('#message').val().trim(); if (!text) return;
     fetch('/human', { method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ text, type:'echo', interrupt:true, sessionid:sid() }) });
+  });
+
+  // ── 文本翻译（TranslateGemma 单轮请求，不携带对话历史）
+  function appendLanguageGroup(select, label, languages) {
+    const group = document.createElement('optgroup');
+    group.label = label;
+    languages.forEach(language => {
+      const option = document.createElement('option');
+      option.value = language.code;
+      option.textContent = language.name_zh;
+      group.appendChild(option);
+    });
+    select.appendChild(group);
+  }
+
+  function populateTranslationLanguages(languages) {
+    const sourceSelect = document.getElementById('translation-source-language');
+    const targetSelect = document.getElementById('translation-target-language');
+    const commonLanguages = languages.filter(language => language.common);
+    const otherLanguages = languages.filter(language => !language.common);
+
+    sourceSelect.innerHTML = '';
+    const autoOption = document.createElement('option');
+    autoOption.value = 'auto';
+    autoOption.textContent = '自动检测';
+    sourceSelect.appendChild(autoOption);
+    appendLanguageGroup(sourceSelect, '常用语种', commonLanguages);
+    appendLanguageGroup(sourceSelect, '全部支持语种', otherLanguages);
+
+    targetSelect.innerHTML = '';
+    appendLanguageGroup(targetSelect, '常用语种', commonLanguages);
+    appendLanguageGroup(targetSelect, '全部支持语种', otherLanguages);
+    sourceSelect.value = 'auto';
+    targetSelect.value = 'en';
+  }
+
+  fetch('./translation_languages.json')
+    .then(response => {
+      if (!response.ok) throw new Error('语言清单加载失败');
+      return response.json();
+    })
+    .then(populateTranslationLanguages)
+    .catch(error => console.warn(error));
+
+  function setTranslationStatus(text, state) {
+    const icon = state === 'error' ? 'bi-exclamation-circle' : state === 'success' ? 'bi-check-circle' : 'bi-shield-check';
+    $('#translation-status').html('<i class="bi ' + icon + '"></i><span></span>');
+    $('#translation-status span').text(text);
+    $('#translation-status').css('color', state === 'error' ? 'var(--danger)' : state === 'success' ? 'var(--success)' : 'var(--text-muted)');
+  }
+
+  function setTranslationBusy(busy) {
+    $('#translation-submit').prop('disabled', busy).html(
+      busy
+        ? '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> 翻译中…'
+        : '<i class="bi bi-translate"></i> 开始翻译'
+    );
+  }
+
+  $('#translation-source-text').on('input', function () {
+    $('#translation-source-count').text(this.value.length + ' / 20000');
+  }).on('keydown', function (event) {
+    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+      event.preventDefault();
+      $('#translation-submit').click();
+    }
+  });
+
+  $('#translation-swap').click(function () {
+    const sourceLanguage = $('#translation-source-language').val();
+    const targetLanguage = $('#translation-target-language').val();
+    if (sourceLanguage === 'auto') {
+      setTranslationStatus('自动检测模式下无法交换语种，请先选择具体输入语种', 'error');
+      return;
+    }
+    const sourceText = $('#translation-source-text').val();
+    const translatedText = $('#translation-result').val();
+    $('#translation-source-language').val(targetLanguage);
+    $('#translation-target-language').val(sourceLanguage);
+    if (translatedText.trim()) {
+      $('#translation-source-text').val(translatedText).trigger('input');
+      $('#translation-result').val(sourceText);
+    }
+    setTranslationStatus('已交换输入与输出语种');
+  });
+
+  $('#translation-source-clear').click(function () {
+    $('#translation-source-text').val('').trigger('input').focus();
+    $('#translation-result').val('');
+    setTranslationStatus('独立翻译请求，不保留对话历史');
+  });
+
+  $('#translation-copy').click(function () {
+    const text = $('#translation-result').val();
+    if (!text) return;
+    const fallbackCopy = () => {
+      const editor = document.getElementById('translation-result');
+      editor.focus(); editor.select(); document.execCommand('copy');
+    };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(() => setTranslationStatus('译文已复制', 'success')).catch(fallbackCopy);
+    } else {
+      fallbackCopy(); setTranslationStatus('译文已复制', 'success');
+    }
+  });
+
+  $('#translation-submit').click(function () {
+    const text = $('#translation-source-text').val().trim();
+    const sourceLanguage = $('#translation-source-language').val();
+    const targetLanguage = $('#translation-target-language').val();
+    if (!text) {
+      setTranslationStatus('请输入需要翻译的文字', 'error');
+      $('#translation-source-text').focus();
+      return;
+    }
+    if (sourceLanguage === targetLanguage) {
+      setTranslationStatus('输入语种与输出语种不能相同', 'error');
+      return;
+    }
+
+    setTranslationBusy(true);
+    setTranslationStatus(sourceLanguage === 'auto' ? '正在自动检测输入语种并翻译…' : '正在调用 TranslateGemma…');
+    fetch('/translate_text', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        text:text,
+        source_language:sourceLanguage,
+        target_language:targetLanguage
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.code !== 0 || !data.data || !data.data.translated) {
+        throw new Error(data.msg || '翻译失败');
+      }
+      $('#translation-result').val(data.data.translated);
+      const statusPrefix = sourceLanguage === 'auto' ? '自动检测并翻译完成' : '翻译完成';
+      setTranslationStatus(statusPrefix + ' · 耗时 ' + data.data.elapsed + 's', 'success');
+    })
+    .catch(error => {
+      console.error(error);
+      setTranslationStatus(error.message || '翻译请求失败', 'error');
+    })
+    .finally(() => setTranslationBusy(false));
   });
 
   // ── PTT 绑定（jQuery，避免 onmousedown 内联写法）

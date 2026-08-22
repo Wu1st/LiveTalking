@@ -46,6 +46,7 @@ from av import AudioFrame, VideoFrame
 from fractions import Fraction
 
 from utils.logger import logger
+from utils.latency import emit_latency, get_trace
 from utils.image import read_imgs,mirror_index
 
 # class State(Enum):
@@ -217,6 +218,19 @@ class BaseAvatar:
     def notify(self, eventpoint:dict):
         if eventpoint and eventpoint.get('status'):
             logger.info("notify:%s", eventpoint)
+            trace = get_trace(eventpoint)
+            status = eventpoint.get("status")
+            stage = "avatar_playback_start" if status == "start" else "avatar_playback_end"
+            emit_latency(
+                stage,
+                trace,
+                segment_index=eventpoint.get("segment_index"),
+                segment_count=eventpoint.get("segment_count"),
+                asr_input_queue=(self.asr.queue.qsize() if hasattr(self, "asr") else None),
+                asr_output_queue=(self.asr.output_queue.qsize() if hasattr(self, "asr") else None),
+                render_queue=(self.res_frame_queue.qsize() if hasattr(self, "res_frame_queue") else None),
+                tts_text_queue=(self.tts.msgqueue.qsize() if hasattr(self, "tts") else None),
+            )
 
     def start_recording(self):
         if self.recording:

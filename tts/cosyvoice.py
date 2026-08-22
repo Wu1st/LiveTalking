@@ -10,6 +10,7 @@ from av import AudioFrame
 from av.audio.resampler import AudioResampler
 
 from utils.logger import logger
+from utils.latency import emit_latency, get_trace
 from .base_tts import BaseTTS, State
 from registry import register
 
@@ -327,6 +328,12 @@ class CosyVoiceTTS(BaseTTS):
         text, textevent = msg
         text = text or ""
         textevent = textevent or {}
+        trace = get_trace(textevent)
+        emit_latency(
+            "tts_processing_started",
+            trace,
+            text_chars=len(text),
+        )
 
         tts_cfg = textevent.get("tts", {}) or {}
 
@@ -382,6 +389,16 @@ class CosyVoiceTTS(BaseTTS):
         if not segments:
             return
 
+        emit_latency(
+            "tts_split_decided",
+            trace,
+            enabled=split_enabled,
+            segment_count=len(segments),
+            first_segment_chars=len(segments[0]),
+            prefetch=split_prefetch,
+            filler=filler_enabled,
+        )
+
         if COSYVOICE_LOG_SPLIT_RESULT:
             logger.info(
                 "cosy_voice split config: enabled=%s, max_chars=%d, first_max_chars=%d, prefetch=%s, override=%s",
@@ -403,6 +420,7 @@ class CosyVoiceTTS(BaseTTS):
                     segment_text,
                     ref_file,
                     self.opt.TTS_SERVER,
+                    trace=trace,
                 )
 
             return self.cosy_voice(
@@ -411,6 +429,7 @@ class CosyVoiceTTS(BaseTTS):
                 ref_text,
                 language,
                 self.opt.TTS_SERVER,
+                trace=trace,
             )
 
         filler_chunks = None
@@ -539,6 +558,7 @@ class CosyVoiceTTS(BaseTTS):
         reftext: str,
         language: str,
         server_url: str,
+        trace: dict | None = None,
     ) -> Iterator[bytes]:
         """
         普通 zero-shot TTS。
@@ -597,27 +617,64 @@ class CosyVoiceTTS(BaseTTS):
 
             post_end = time.perf_counter()
             logger.info("cosy_voice Time to make POST: %.2fs, text=%s", post_end - start, text)
+            emit_latency(
+                "tts_http_posted",
+                trace,
+                duration_ms=(post_end - start) * 1000,
+                text_chars=len(text),
+                speaker_mode="registered" if spk_id else "upload",
+                status_code=res.status_code,
+            )
 
             if res.status_code != 200:
                 logger.error("CosyVoice error %s: %s", res.status_code, res.text)
+                emit_latency(
+                    "tts_http_error",
+                    trace,
+                    status_code=res.status_code,
+                    text_chars=len(text),
+                )
                 return
 
             first = True
+            chunk_count = 0
+            byte_count = 0
 
             for chunk in res.iter_content(chunk_size=COSYVOICE_HTTP_CHUNK_SIZE):
                 if not chunk:
                     continue
 
+                chunk_count += 1
+                byte_count += len(chunk)
+
                 if first:
                     first_end = time.perf_counter()
                     logger.info("cosy_voice Time to first chunk: %.2fs, text=%s", first_end - start, text)
                     logger.info("cosy_voice POST to first chunk: %.2fs, text=%s", first_end - post_end, text)
+                    emit_latency(
+                        "tts_http_first_chunk",
+                        trace,
+                        duration_ms=(first_end - start) * 1000,
+                        post_to_first_ms=(first_end - post_end) * 1000,
+                        text_chars=len(text),
+                        speaker_mode="registered" if spk_id else "upload",
+                    )
                     first = False
 
                 if self.state == State.RUNNING:
                     yield chunk
 
-        except Exception:
+            emit_latency(
+                "tts_http_finished",
+                trace,
+                duration_ms=(time.perf_counter() - start) * 1000,
+                chunks=chunk_count,
+                bytes=byte_count,
+                text_chars=len(text),
+            )
+
+        except Exception as exc:
+            emit_latency("tts_http_error", trace, error=repr(exc), text_chars=len(text))
             logger.exception("cosyvoice error:")
 
     def cosy_voice_minnan(
@@ -625,6 +682,7 @@ class CosyVoiceTTS(BaseTTS):
         text: str,
         reffile: str,
         server_url: str,
+        trace: dict | None = None,
     ) -> Iterator[bytes]:
         """
         闽南语合成，调用 /inference_minnan。
@@ -652,16 +710,29 @@ class CosyVoiceTTS(BaseTTS):
 
             post_end = time.perf_counter()
             logger.info("cosy_voice_minnan Time to make POST: %.2fs, text=%s", post_end - start, text)
+            emit_latency(
+                "tts_http_posted",
+                trace,
+                duration_ms=(post_end - start) * 1000,
+                text_chars=len(text),
+                speaker_mode="minnan_upload",
+                status_code=res.status_code,
+            )
 
             if res.status_code != 200:
                 logger.error("CosyVoice minnan error %s: %s", res.status_code, res.text)
                 return
 
             first = True
+            chunk_count = 0
+            byte_count = 0
 
             for chunk in res.iter_content(chunk_size=COSYVOICE_HTTP_CHUNK_SIZE):
                 if not chunk:
                     continue
+
+                chunk_count += 1
+                byte_count += len(chunk)
 
                 if first:
                     first_end = time.perf_counter()
@@ -675,12 +746,31 @@ class CosyVoiceTTS(BaseTTS):
                         first_end - post_end,
                         text,
                     )
+                    emit_latency(
+                        "tts_http_first_chunk",
+                        trace,
+                        duration_ms=(first_end - start) * 1000,
+                        post_to_first_ms=(first_end - post_end) * 1000,
+                        text_chars=len(text),
+                        speaker_mode="minnan_upload",
+                    )
                     first = False
 
                 if self.state == State.RUNNING:
                     yield chunk
 
-        except Exception:
+            emit_latency(
+                "tts_http_finished",
+                trace,
+                duration_ms=(time.perf_counter() - start) * 1000,
+                chunks=chunk_count,
+                bytes=byte_count,
+                text_chars=len(text),
+                speaker_mode="minnan_upload",
+            )
+
+        except Exception as exc:
+            emit_latency("tts_http_error", trace, error=repr(exc), text_chars=len(text))
             logger.exception("cosyvoice minnan error:")
 
     def filler_cache_key(
@@ -1044,12 +1134,34 @@ class CosyVoiceTTS(BaseTTS):
         """
         segment_text, textevent = msg
         textevent = textevent or {}
+        trace = get_trace(textevent)
+        stream_started = time.perf_counter()
+        dequeued_at = textevent.get("_tts_dequeued_monotonic")
 
         if full_text is None:
             full_text = segment_text
 
         first_frame_of_this_segment = True
         audio_buffer = np.zeros(0, dtype=np.float32)
+        emitted_frames = 0
+
+        def log_first_pcm():
+            nonlocal first_frame_of_this_segment
+            if not first_frame_of_this_segment:
+                return
+            now = time.perf_counter()
+            duration_ms = None
+            if isinstance(dequeued_at, (int, float)):
+                duration_ms = (now - dequeued_at) * 1000
+            emit_latency(
+                "tts_first_pcm_enqueued",
+                trace,
+                duration_ms=duration_ms,
+                stream_ms=(now - stream_started) * 1000,
+                segment_index=segment_index,
+                segment_count=segment_count,
+                text_chars=len(segment_text),
+            )
 
         for stream in _iter_resampled_pcm(
             audio_stream,
@@ -1073,6 +1185,7 @@ class CosyVoiceTTS(BaseTTS):
                         "segment_count": segment_count,
                     }
 
+                log_first_pcm()
                 first_frame_of_this_segment = False
                 eventpoint.update(**textevent)
 
@@ -1080,6 +1193,7 @@ class CosyVoiceTTS(BaseTTS):
                     frame,
                     eventpoint,
                 )
+                emitted_frames += 1
 
         # 处理最后不足一帧的尾巴。
         if audio_buffer.shape[0] > 0:
@@ -1097,6 +1211,7 @@ class CosyVoiceTTS(BaseTTS):
                     "segment_count": segment_count,
                 }
 
+            log_first_pcm()
             first_frame_of_this_segment = False
             eventpoint.update(**textevent)
 
@@ -1104,6 +1219,7 @@ class CosyVoiceTTS(BaseTTS):
                 frame,
                 eventpoint,
             )
+            emitted_frames += 1
 
         if end_status:
             eventpoint = {
@@ -1119,3 +1235,14 @@ class CosyVoiceTTS(BaseTTS):
                 np.zeros(self.chunk, np.float32),
                 eventpoint,
             )
+
+        emit_latency(
+            "tts_pcm_segment_finished",
+            trace,
+            duration_ms=(time.perf_counter() - stream_started) * 1000,
+            segment_index=segment_index,
+            segment_count=segment_count,
+            emitted_frames=emitted_frames,
+            audio_duration_ms=emitted_frames * 20,
+            text_chars=len(segment_text),
+        )

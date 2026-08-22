@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, List, Dict
 if TYPE_CHECKING:
     from avatars.base_avatar import BaseAvatar
 from utils.logger import logger
+from utils.latency import emit_latency, ensure_trace
 
 # ── 全局对话历史存储 ──────────────────────────────────────────
 # key: sessionid (str), value: list of {"role": ..., "content": ...}
@@ -81,9 +82,11 @@ def clear_history(sessionid: str):
 
 
 def llm_response(message, avatar_session: 'BaseAvatar', datainfo: dict = {}):
+    trace = None
     try:
         opt = avatar_session.opt
         sessionid = str(getattr(opt, 'sessionid', '0'))
+        datainfo, trace = ensure_trace(datainfo, sessionid, "llm_direct")
 
         # 取出该 session 的历史
         history = get_history(sessionid)
@@ -92,6 +95,18 @@ def llm_response(message, avatar_session: 'BaseAvatar', datainfo: dict = {}):
         history.append({'role': 'user', 'content': message})
 
         start = time.perf_counter()
+        dispatched_at = datainfo.get("_llm_dispatched_monotonic")
+        dispatch_wait_ms = None
+        if isinstance(dispatched_at, (int, float)):
+            dispatch_wait_ms = (start - dispatched_at) * 1000
+        emit_latency(
+            "llm_started",
+            trace,
+            dispatch_wait_ms=dispatch_wait_ms,
+            history_messages=len(history) - 1,
+            input_chars=len(message),
+            model="qwen2.5:7b",
+        )
         client = _get_ollama_client()
 
         # 读取可自定义的 system prompt（opt 上有就用，否则用默认值）
@@ -113,12 +128,25 @@ def llm_response(message, avatar_session: 'BaseAvatar', datainfo: dict = {}):
         full_reply = ""
         result = ""
         first = True
+        tts_chunk_count = 0
+        first_tts_enqueued = False
+        prompt_tokens = None
+        completion_tokens = None
 
         for chunk in completion:
+            usage = getattr(chunk, "usage", None)
+            if usage is not None:
+                prompt_tokens = getattr(usage, "prompt_tokens", prompt_tokens)
+                completion_tokens = getattr(usage, "completion_tokens", completion_tokens)
             if len(chunk.choices) > 0:
                 if first:
                     end = time.perf_counter()
                     logger.info(f"LLM Time to first chunk: {end-start:.2f}s")
+                    emit_latency(
+                        "llm_first_token",
+                        trace,
+                        duration_ms=(end - start) * 1000,
+                    )
                     first = False
 
                 msg = chunk.choices[0].delta.content
@@ -135,6 +163,23 @@ def llm_response(message, avatar_session: 'BaseAvatar', datainfo: dict = {}):
                         lastpos = i+1
                         if len(result) > 10:
                             logger.info(f"TTS chunk: {result}")
+                            tts_chunk_count += 1
+                            enqueue_time = time.perf_counter()
+                            emit_latency(
+                                "llm_tts_chunk_enqueued",
+                                trace,
+                                duration_ms=(enqueue_time - start) * 1000,
+                                chunk_index=tts_chunk_count,
+                                text_chars=len(result),
+                            )
+                            if not first_tts_enqueued:
+                                emit_latency(
+                                    "llm_tts_first_enqueue",
+                                    trace,
+                                    duration_ms=(enqueue_time - start) * 1000,
+                                    text_chars=len(result),
+                                )
+                                first_tts_enqueued = True
                             avatar_session.put_msg_txt(result, datainfo)
                             result = ""
                 result = result + msg[lastpos:]
@@ -143,7 +188,33 @@ def llm_response(message, avatar_session: 'BaseAvatar', datainfo: dict = {}):
         logger.info(f"LLM Time to last chunk: {end-start:.2f}s")
 
         if result:
+            tts_chunk_count += 1
+            enqueue_time = time.perf_counter()
+            emit_latency(
+                "llm_tts_chunk_enqueued",
+                trace,
+                duration_ms=(enqueue_time - start) * 1000,
+                chunk_index=tts_chunk_count,
+                text_chars=len(result),
+            )
+            if not first_tts_enqueued:
+                emit_latency(
+                    "llm_tts_first_enqueue",
+                    trace,
+                    duration_ms=(enqueue_time - start) * 1000,
+                    text_chars=len(result),
+                )
             avatar_session.put_msg_txt(result, datainfo)
+
+        emit_latency(
+            "llm_finished",
+            trace,
+            duration_ms=(end - start) * 1000,
+            output_chars=len(full_reply),
+            tts_chunks=tts_chunk_count,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+        )
 
         # ── 将 assistant 完整回复写入历史，然后裁剪 ──
         if full_reply:
@@ -153,6 +224,7 @@ def llm_response(message, avatar_session: 'BaseAvatar', datainfo: dict = {}):
             _pending_replies[sessionid] = full_reply  # 存给前端轮询
 
     except Exception as e:
+        emit_latency("llm_error", trace, error=repr(e))
         logger.exception('llm exception:')
         # 出错时把刚才加入的 user 消息从历史里移除，避免历史污染
         history = get_history(str(getattr(avatar_session.opt, 'sessionid', '0')))

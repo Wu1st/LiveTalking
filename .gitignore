@@ -18,4 +18,6 @@ workspace/log_ngp.txt
 .idea
 models/
 *.log
+latency_metrics.jsonl*
+latency_report.txt
 dist

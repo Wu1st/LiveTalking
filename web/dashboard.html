@@ -922,21 +922,134 @@ function addMsg(text, type) {
   c.scrollTop = c.scrollHeight;
 }
 
+function makeClientTraceId() {
+  if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+    return window.crypto.randomUUID().replace(/-/g, '');
+  }
+  return 'client-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
+}
+
+function postClientMetric(stage, traceId, metrics) {
+  const payload = {
+    stage: stage,
+    trace_id: traceId || '',
+    sessionid: sid(),
+    metrics: metrics || {}
+  };
+  fetch('/api/metrics/client', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload),
+    keepalive: true
+  }).catch(() => {});
+}
+
+let lastWebRTCConnectionState = null;
+async function collectWebRTCStats() {
+  if (typeof pc === 'undefined' || !pc || typeof pc.getStats !== 'function') return;
+
+  const state = pc.connectionState || pc.iceConnectionState || 'unknown';
+  if (state !== lastWebRTCConnectionState) {
+    lastWebRTCConnectionState = state;
+    postClientMetric('client_connection_state', '', {
+      connection_state: pc.connectionState || null,
+      ice_connection_state: pc.iceConnectionState || null,
+      ice_gathering_state: pc.iceGatheringState || null
+    });
+  }
+  if (state === 'closed' || state === 'failed' || state === 'new') return;
+
+  try {
+    const reports = await pc.getStats();
+    const metrics = {};
+    reports.forEach(report => {
+      if (report.type === 'inbound-rtp' && !report.isRemote) {
+        const kind = report.kind || report.mediaType;
+        if (kind === 'audio') {
+          metrics.audio_packets_received = report.packetsReceived;
+          metrics.audio_packets_lost = report.packetsLost;
+          metrics.audio_jitter_ms = Number.isFinite(report.jitter) ? report.jitter * 1000 : null;
+          metrics.audio_concealed_samples = report.concealedSamples;
+          metrics.audio_concealment_events = report.concealmentEvents;
+          metrics.audio_jitter_buffer_delay_ms = Number.isFinite(report.jitterBufferDelay)
+            ? report.jitterBufferDelay * 1000 : null;
+          metrics.audio_jitter_buffer_emitted = report.jitterBufferEmittedCount;
+        } else if (kind === 'video') {
+          metrics.video_packets_received = report.packetsReceived;
+          metrics.video_packets_lost = report.packetsLost;
+          metrics.video_jitter_ms = Number.isFinite(report.jitter) ? report.jitter * 1000 : null;
+          metrics.video_frames_received = report.framesReceived;
+          metrics.video_frames_decoded = report.framesDecoded;
+          metrics.video_frames_dropped = report.framesDropped;
+          metrics.video_freeze_count = report.freezeCount;
+          metrics.video_nack_count = report.nackCount;
+          metrics.video_pli_count = report.pliCount;
+        }
+      }
+      if (report.type === 'candidate-pair' && report.state === 'succeeded' &&
+          (report.nominated || report.selected)) {
+        metrics.rtt_ms = Number.isFinite(report.currentRoundTripTime)
+          ? report.currentRoundTripTime * 1000 : null;
+        metrics.available_incoming_bitrate = report.availableIncomingBitrate;
+        metrics.available_outgoing_bitrate = report.availableOutgoingBitrate;
+        metrics.bytes_received = report.bytesReceived;
+        metrics.bytes_sent = report.bytesSent;
+      }
+    });
+    if (Object.keys(metrics).length) {
+      postClientMetric('client_webrtc_stats', '', metrics);
+    }
+  } catch (error) {
+    console.debug('WebRTC stats collection skipped:', error);
+  }
+}
+
+setInterval(collectWebRTCStats, 5000);
+
 // 上传 webm chunks → /humanaudio → 回调识别文字
-function uploadAudio(chunks, onDone) {
+function uploadAudio(chunks, onDone, clientTiming) {
+  clientTiming = clientTiming || {};
   const blob = new Blob(chunks, { type: 'audio/webm' });
   if (blob.size < 800) { if (onDone) onDone(null); return; }
+  const traceId = makeClientTraceId();
+  const uploadStarted = performance.now();
   const fd = new FormData();
   fd.append('file', blob, 'audio.webm');
   fd.append('sessionid', sid());
+  fd.append('client_trace_id', traceId);
+  fd.append('client_mode', clientTiming.mode || 'unknown');
+  if (Number.isFinite(clientTiming.silenceWaitMs)) {
+    fd.append('client_silence_wait_ms', String(clientTiming.silenceWaitMs));
+  }
+  if (Number.isFinite(clientTiming.finalizeStartedAt)) {
+    fd.append(
+      'client_speech_end_to_upload_ms',
+      String(Math.max(0, uploadStarted - clientTiming.finalizeStartedAt))
+    );
+  }
   fetch('/humanaudio', { method: 'POST', body: fd })
     .then(r => r.json())
     .then(data => {
+      postClientMetric('client_fetch_complete', traceId, {
+        roundtrip_ms: performance.now() - uploadStarted,
+        audio_bytes: blob.size,
+        result_code: data.code,
+        client_mode: clientTiming.mode || 'unknown'
+      });
       const text = (data.code === 0 && data.data && data.data.recognized)
         ? data.data.recognized : null;
       if (onDone) onDone(text);
     })
-    .catch(() => { if (onDone) onDone(null); });
+    .catch(error => {
+      postClientMetric('client_fetch_complete', traceId, {
+        roundtrip_ms: performance.now() - uploadStarted,
+        audio_bytes: blob.size,
+        result_code: -1,
+        client_mode: clientTiming.mode || 'unknown',
+        error: String(error)
+      });
+      if (onDone) onDone(null);
+    });
 }
 
 // ═══════════════════════════════════════════════
@@ -968,6 +1081,7 @@ function startPTT() {
 
 function stopPTT() {
   if (!pttRecorder || pttRecorder.state === 'inactive') return;
+  const finalizeStartedAt = performance.now();
 
   // 先把引用存下来，再清空全局变量
   const recorder = pttRecorder;
@@ -984,7 +1098,7 @@ function stopPTT() {
             addMsg(text, 'user');
             startReplyPolling();
         }
-    });
+    }, { mode:'ptt', silenceWaitMs:0, finalizeStartedAt:finalizeStartedAt });
   };
 
   recorder.stop();  // stop 在 onstop 设好之后才调
@@ -1306,6 +1420,8 @@ $(document).ready(function () {
 
   function endVADUtterance() {
     if (!isSpeaking_vad || !vadRecorder) return;
+    const finalizeStartedAt = performance.now();
+    const silenceWaitMs = getSilenceDuration();
     isSpeaking_vad = false;
     $('#vad-badge').text('监听中').removeClass('speaking');
     vadRecorder.stop();
@@ -1318,7 +1434,7 @@ $(document).ready(function () {
               addMsg(text, 'user');
               startReplyPolling();   // ← 加这行
           }
-      });
+      }, { mode:'vad', silenceWaitMs:silenceWaitMs, finalizeStartedAt:finalizeStartedAt });
     };
   }
 
@@ -1378,7 +1494,9 @@ $(document).ready(function () {
 
   function requestTranscription(file, sourceLabel, onFinished) {
     const fd = new FormData();
+    const traceId = makeClientTraceId();
     fd.append('file', file, file.name || 'environment.webm');
+    fd.append('client_trace_id', traceId);
     $('#transcript-meta').text(sourceLabel + ' · 正在识别…');
     return fetch('/transcribe_audio', { method:'POST', body:fd })
       .then(r => r.json())

@@ -1,5 +1,6 @@
 from threading import Thread
 import queue
+import time
 from queue import Queue
 from io import BytesIO
 from enum import Enum
@@ -9,6 +10,7 @@ if TYPE_CHECKING:
     from avatars.base_avatar import BaseAvatar
 
 from utils.logger import logger
+from utils.latency import emit_latency, ensure_trace, get_trace
 
 class State(Enum):
     RUNNING = 0
@@ -33,7 +35,16 @@ class BaseTTS:
 
     def put_msg_txt(self, msg: str, datainfo: dict = {}): 
         if len(msg) > 0:
-            self.msgqueue.put((msg, datainfo))
+            sessionid = str(getattr(getattr(self.parent, "opt", None), "sessionid", "0"))
+            item_datainfo, trace = ensure_trace(datainfo, sessionid, "tts_direct")
+            item_datainfo["_tts_enqueued_monotonic"] = time.perf_counter()
+            self.msgqueue.put((msg, item_datainfo))
+            emit_latency(
+                "tts_enqueued",
+                trace,
+                text_chars=len(msg),
+                queue_size=self.msgqueue.qsize(),
+            )
 
     def render(self, quit_event):
         process_thread = Thread(target=self.process_tts, args=(quit_event,))
@@ -46,6 +57,19 @@ class BaseTTS:
                 self.state = State.RUNNING
             except queue.Empty:
                 continue
+            trace = get_trace(msg[1])
+            enqueued_at = msg[1].get("_tts_enqueued_monotonic")
+            queue_ms = None
+            if isinstance(enqueued_at, (int, float)):
+                queue_ms = (time.perf_counter() - enqueued_at) * 1000
+            msg[1]["_tts_dequeued_monotonic"] = time.perf_counter()
+            emit_latency(
+                "tts_dequeued",
+                trace,
+                queue_ms=queue_ms,
+                text_chars=len(msg[0]),
+                queue_size=self.msgqueue.qsize(),
+            )
             self.txt_to_audio(msg)
         self.stop_tts()
         logger.info('ttsreal thread stop')

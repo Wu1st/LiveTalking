@@ -27,6 +27,7 @@ from av.packet import Packet
 from av import AudioFrame
 import fractions
 import numpy as np
+from utils.latency import emit_latency, get_trace
 
 AUDIO_PTIME = 0.020  # 20ms audio packetization
 VIDEO_CLOCK_RATE = 90000
@@ -137,6 +138,14 @@ class PlayerStreamTrack(MediaStreamTrack):
         frame.pts = pts
         frame.time_base = time_base
         if eventpoint and self._player is not None:
+            trace = get_trace(eventpoint)
+            emit_latency(
+                "webrtc_media_event_sent",
+                trace,
+                kind=self.kind,
+                status=eventpoint.get("status"),
+                track_queue=self._queue.qsize(),
+            )
             self._player.notify(eventpoint)
         if frame is None:
             self.stop()
@@ -146,7 +155,13 @@ class PlayerStreamTrack(MediaStreamTrack):
             self.framecount += 1
             self.lasttime = time.perf_counter()
             if self.framecount==100:
-                mylogger.info(f"------actual avg final fps:{self.framecount/self.totaltime:.4f}")
+                final_fps = self.framecount/self.totaltime
+                mylogger.info(f"------actual avg final fps:{final_fps:.4f}")
+                emit_latency(
+                    "webrtc_video_fps",
+                    fps=final_fps,
+                    track_queue=self._queue.qsize(),
+                )
                 self.framecount = 0
                 self.totaltime=0
         return frame

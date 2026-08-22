@@ -11,6 +11,13 @@ from pathlib import Path
 from aiohttp import web
 
 from utils.logger import logger
+from utils.latency import (
+    attach_trace,
+    emit_latency,
+    new_trace,
+    optional_float,
+    trace_from_id,
+)
 
 import tempfile
 import os
@@ -96,18 +103,29 @@ def _probe_audio_duration(wav_path: str):
 
 async def human(request):
     """文本输入（echo/chat 模式），支持 voice/emotion 参数"""
+    request_started = time.perf_counter()
+    trace = None
     try:
         params: dict = await request.json()
 
         sessionid: str = params.get('sessionid', '')
+        trace = new_trace(
+            sessionid,
+            f"text_{params.get('type', 'unknown')}",
+            started_monotonic=request_started,
+            text_chars=len(str(params.get('text', ''))),
+            interrupt=bool(params.get('interrupt')),
+        )
         avatar_session = get_session(request, sessionid)
         if avatar_session is None:
+            emit_latency("human_error", trace, error="session not found")
             return json_error("session not found")
 
         if params.get('interrupt'):
+            emit_latency("interrupt_requested", trace, trigger="human")
             avatar_session.flush_talk()
 
-        datainfo = {}
+        datainfo = attach_trace({}, trace)
         if params.get('tts'):  # tts 参数透传（voice, emotion 等）
             datainfo['tts'] = params.get('tts')
 
@@ -116,27 +134,42 @@ async def human(request):
         elif params['type'] == 'chat':
             llm_response = request.app.get("llm_response")
             if llm_response:
+                datainfo["_llm_dispatched_monotonic"] = time.perf_counter()
+                emit_latency("llm_dispatched", trace)
                 asyncio.get_event_loop().run_in_executor(
                     None, llm_response, params['text'], avatar_session, datainfo
                 )
 
-        return json_ok()
+        emit_latency("human_accepted", trace)
+        return json_ok({"trace_id": trace["trace_id"]})
     except Exception as e:
+        emit_latency("human_error", trace, error=repr(e))
         logger.exception('human route exception:')
         return json_error(str(e))
 
 
 async def interrupt_talk(request):
     """打断当前说话"""
+    request_started = time.perf_counter()
+    trace = None
     try:
         params = await request.json()
         sessionid = params.get('sessionid', '')
+        trace = new_trace(
+            sessionid,
+            "manual_interrupt",
+            started_monotonic=request_started,
+        )
         avatar_session = get_session(request, sessionid)
         if avatar_session is None:
+            emit_latency("interrupt_error", trace, error="session not found")
             return json_error("session not found")
+        emit_latency("interrupt_requested", trace, trigger="button")
         avatar_session.flush_talk()
-        return json_ok()
+        emit_latency("interrupt_returned", trace)
+        return json_ok({"trace_id": trace["trace_id"]})
     except Exception as e:
+        emit_latency("interrupt_error", trace, error=repr(e))
         logger.exception('interrupt_talk exception:')
         return json_error(str(e))
 
@@ -163,20 +196,45 @@ async def humanaudio(request):
 
 async def humanaudio(request):
     """上传音频 → ASR识别 → LLM对话"""
+    request_started = time.perf_counter()
+    trace = None
     try:
         form = await request.post()
-        t0 = time.perf_counter()
+        form_received = time.perf_counter()
 
         sessionid = str(form.get('sessionid', ''))
+        client_silence_wait_ms = optional_float(form.get("client_silence_wait_ms"))
+        client_speech_end_to_upload_ms = optional_float(
+            form.get("client_speech_end_to_upload_ms")
+        )
+        trace = new_trace(
+            sessionid,
+            "audio_chat",
+            started_monotonic=request_started,
+            trace_id=str(form.get("client_trace_id") or "") or None,
+            client_mode=str(form.get("client_mode", "unknown")),
+            client_silence_wait_ms=client_silence_wait_ms,
+            client_speech_end_to_upload_ms=client_speech_end_to_upload_ms,
+        )
         fileobj = form["file"]
         filebytes = fileobj.file.read()
+        file_read_end = time.perf_counter()
         # 判断文件格式
         logger.info(f"audio content_type={fileobj.content_type}, filename={fileobj.filename}, size={len(filebytes)}")
+        emit_latency(
+            "audio_upload_received",
+            trace,
+            form_parse_ms=(form_received - request_started) * 1000,
+            file_read_ms=(file_read_end - form_received) * 1000,
+            bytes=len(filebytes),
+            content_type=fileobj.content_type,
+        )
 
-        datainfo = {}
+        datainfo = attach_trace({}, trace)
 
         avatar_session = get_session(request, sessionid)
         if avatar_session is None:
+            emit_latency("audio_chat_error", trace, error="session not found")
             return json_error("session not found")
 
         with tempfile.NamedTemporaryFile(suffix='.webm', delete=False) as f:
@@ -185,6 +243,7 @@ async def humanaudio(request):
 
         tmp_path = raw_path.replace('.webm', '.wav')
         try:
+            t0 = time.perf_counter()
             subprocess.run(
                 ["ffmpeg", "-y", "-i", raw_path, "-ar", "16000", "-ac", "1", "-f", "wav", tmp_path],
                 check=True, capture_output=True
@@ -211,29 +270,62 @@ async def humanaudio(request):
 
         logger.info(f"ASR recognized: {recognized_text}")
         logger.info(f"LATENCY ffmpeg={t1-t0:.3f}s ASR={t2-t1:.3f}s total_asr={t2-t0:.3f}s audio_dur={dur:.1f}s RTF={((t2-t1)/dur):.2f}")
+        emit_latency(
+            "asr_final",
+            trace,
+            ffmpeg_ms=(t1 - t0) * 1000,
+            asr_ms=(t2 - t1) * 1000,
+            total_asr_ms=(t2 - t0) * 1000,
+            audio_duration_s=dur,
+            rtf=((t2 - t1) / dur) if dur > 0 else None,
+            recognized_chars=len(recognized_text or ""),
+        )
 
         if not recognized_text:
+            emit_latency("audio_chat_error", trace, error="empty ASR result")
             return json_error("ASR 识别结果为空")
 
         # 走 LLM 流程（与 human 路由的 chat 模式完全一致）
         llm_response = request.app.get("llm_response")
         if llm_response:
+            datainfo["_llm_dispatched_monotonic"] = time.perf_counter()
+            emit_latency("llm_dispatched", trace)
             loop.run_in_executor(
                 None, llm_response, recognized_text, avatar_session, datainfo
             )
 
-        return json_ok({"recognized": recognized_text})
+        emit_latency("audio_chat_accepted", trace)
+        return json_ok({"recognized": recognized_text, "trace_id": trace["trace_id"]})
 
     except Exception as e:
+        emit_latency("audio_chat_error", trace, error=repr(e))
         logger.exception('humanaudio exception:')
         return json_error(str(e))
 
 async def humanaudio_monitor(request):
     """监听模式：只做 ASR 转写，不触发 LLM"""
+    request_started = time.perf_counter()
+    trace = None
     try:
         form = await request.post()
+        form_received = time.perf_counter()
+        sessionid = str(form.get("sessionid", "0"))
+        trace = new_trace(
+            sessionid,
+            "audio_monitor",
+            started_monotonic=request_started,
+            trace_id=str(form.get("client_trace_id") or "") or None,
+            client_silence_wait_ms=optional_float(form.get("client_silence_wait_ms")),
+        )
         fileobj = form["file"]
         filebytes = fileobj.file.read()
+        emit_latency(
+            "audio_upload_received",
+            trace,
+            form_parse_ms=(form_received - request_started) * 1000,
+            bytes=len(filebytes),
+            content_type=fileobj.content_type,
+        )
 
         import tempfile, os, subprocess
         with tempfile.NamedTemporaryFile(suffix='.webm', delete=False) as f:
@@ -242,11 +334,13 @@ async def humanaudio_monitor(request):
 
         tmp_path = raw_path.replace('.webm', '.wav')
         try:
+            convert_started = time.perf_counter()
             subprocess.run(
                 ["ffmpeg", "-y", "-i", raw_path,
                  "-ar", "16000", "-ac", "1", "-f", "wav", tmp_path],
                 check=True, capture_output=True
             )
+            converted_at = time.perf_counter()
         finally:
             os.unlink(raw_path)
 
@@ -255,14 +349,27 @@ async def humanaudio_monitor(request):
             recognized_text = await loop.run_in_executor(
                 None, asr_svc.transcribe, tmp_path
             )
+            asr_finished = time.perf_counter()
+            duration = _probe_audio_duration(tmp_path)
         finally:
             if os.path.exists(tmp_path):
                 os.unlink(tmp_path)
 
         logger.info(f"Monitor ASR: {recognized_text}")
-        return json_ok({"recognized": recognized_text})
+        emit_latency(
+            "asr_final",
+            trace,
+            ffmpeg_ms=(converted_at - convert_started) * 1000,
+            asr_ms=(asr_finished - converted_at) * 1000,
+            total_asr_ms=(asr_finished - convert_started) * 1000,
+            audio_duration_s=duration,
+            rtf=((asr_finished - converted_at) / duration) if duration else None,
+            recognized_chars=len(recognized_text or ""),
+        )
+        return json_ok({"recognized": recognized_text, "trace_id": trace["trace_id"]})
 
     except Exception as e:
+        emit_latency("audio_monitor_error", trace, error=repr(e))
         logger.exception('humanaudio_monitor exception:')
         return json_error(str(e))
 
@@ -271,13 +378,30 @@ async def transcribe_audio(request):
     """音频转写工作台：接收上传文件或浏览器录音，仅返回可编辑的 ASR 文字。"""
     raw_path = None
     wav_path = None
+    request_started = time.perf_counter()
+    trace = None
     try:
         form = await request.post()
+        form_received = time.perf_counter()
+        trace = new_trace(
+            "transcribe",
+            "audio_transcribe",
+            started_monotonic=request_started,
+            trace_id=str(form.get("client_trace_id") or "") or None,
+            client_silence_wait_ms=optional_float(form.get("client_silence_wait_ms")),
+        )
         fileobj = form.get("file")
         if fileobj is None or not hasattr(fileobj, "file"):
             return json_error("请选择需要转写的音频文件")
 
         filebytes = fileobj.file.read()
+        emit_latency(
+            "audio_upload_received",
+            trace,
+            form_parse_ms=(form_received - request_started) * 1000,
+            bytes=len(filebytes),
+            content_type=getattr(fileobj, "content_type", None),
+        )
         if not filebytes:
             return json_error("上传的音频文件为空")
         if len(filebytes) > MAX_TRANSCRIBE_BYTES:
@@ -307,6 +431,16 @@ async def transcribe_audio(request):
             converted_at - started_at,
             finished_at - converted_at,
         )
+        emit_latency(
+            "asr_final",
+            trace,
+            ffmpeg_ms=(converted_at - started_at) * 1000,
+            asr_ms=(finished_at - converted_at) * 1000,
+            total_asr_ms=(finished_at - started_at) * 1000,
+            audio_duration_s=duration,
+            rtf=((finished_at - converted_at) / duration) if duration else None,
+            recognized_chars=len(recognized_text or ""),
+        )
 
         if not recognized_text:
             return json_error("ASR 识别结果为空")
@@ -316,10 +450,13 @@ async def transcribe_audio(request):
             "filename": filename,
             "duration": duration,
             "elapsed": round(finished_at - started_at, 2),
+            "trace_id": trace["trace_id"],
         })
     except ValueError as e:
+        emit_latency("audio_transcribe_error", trace, error=repr(e))
         return json_error(str(e))
     except Exception as e:
+        emit_latency("audio_transcribe_error", trace, error=repr(e))
         logger.exception('transcribe_audio exception:')
         return json_error(str(e))
     finally:
@@ -330,11 +467,21 @@ async def transcribe_audio(request):
 
 async def translate_text(request):
     """文本翻译：单次调用 TranslateGemma，不保留对话历史。"""
+    request_started = time.perf_counter()
+    trace = None
     try:
         params = await request.json()
         text = str(params.get("text", "")).strip()
         source_language = str(params.get("source_language", "")).strip()
         target_language = str(params.get("target_language", "")).strip()
+        trace = new_trace(
+            "translation",
+            "translation",
+            started_monotonic=request_started,
+            text_chars=len(text),
+            source_language=source_language,
+            target_language=target_language,
+        )
 
         if not text:
             return json_error("请输入需要翻译的文字")
@@ -346,6 +493,7 @@ async def translate_text(request):
             return json_error("翻译服务未配置")
 
         loop = asyncio.get_running_loop()
+        inference_started = time.perf_counter()
         result = await loop.run_in_executor(
             None,
             translation_service.translate,
@@ -353,12 +501,52 @@ async def translate_text(request):
             source_language,
             target_language,
         )
+        emit_latency(
+            "translation_finished",
+            trace,
+            duration_ms=(time.perf_counter() - inference_started) * 1000,
+            output_chars=len(str(result.get("translated", ""))) if isinstance(result, dict) else None,
+        )
+        if isinstance(result, dict):
+            result = dict(result)
+            result["trace_id"] = trace["trace_id"]
         return json_ok(result)
     except (ValueError, TypeError) as e:
+        emit_latency("translation_error", trace, error=repr(e))
         return json_error(str(e))
     except Exception as e:
+        emit_latency("translation_error", trace, error=repr(e))
         logger.exception('translate_text exception:')
         return json_error(f"翻译失败：{e}")
+
+
+async def client_metrics(request):
+    """接收浏览器端 fetch 与 WebRTC 指标，仅写入结构化日志。"""
+    try:
+        payload = await request.json()
+        stage = str(payload.get("stage", ""))
+        allowed_stages = {
+            "client_fetch_complete",
+            "client_webrtc_stats",
+            "client_connection_state",
+        }
+        if stage not in allowed_stages:
+            return json_error("unsupported metrics stage")
+
+        sessionid = str(payload.get("sessionid", "0"))
+        trace_id = str(payload.get("trace_id") or f"webrtc-{sessionid}")
+        metrics = payload.get("metrics")
+        if not isinstance(metrics, dict):
+            metrics = {}
+
+        # 限制字段数量，避免遥测接口被用来写入超大日志。
+        metrics = {str(key): value for key, value in list(metrics.items())[:50]}
+        trace = trace_from_id(sessionid, trace_id, "browser")
+        emit_latency(stage, trace, **metrics)
+        return json_ok()
+    except Exception as e:
+        logger.debug("client_metrics ignored invalid payload: %r", e)
+        return json_error("invalid metrics payload")
 
 
 async def save_monitor_clip(request):
@@ -480,6 +668,7 @@ def setup_routes(app):
     app.router.add_post("/humanaudio_monitor", humanaudio_monitor)
     app.router.add_post("/transcribe_audio", transcribe_audio)
     app.router.add_post("/translate_text", translate_text)
+    app.router.add_post("/api/metrics/client", client_metrics)
     app.router.add_post("/save_monitor_clip", save_monitor_clip)
     app.router.add_post("/append_monitor_log", append_monitor_log)
     app.router.add_post("/get_reply", get_reply)

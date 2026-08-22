@@ -102,9 +102,121 @@ async def offer(request):
     return await rtc_manager.handle_offer(request)
 
 async def on_shutdown(app):
+    stop_event = app.get("ollama_keeper_stop")
+    if stop_event is not None:
+        stop_event.set()
+
     await rtc_manager.shutdown()
 
 
+def preload_cosyvoice_speaker(runtime_opt):
+    """Register the configured zero-shot speaker before serving requests."""
+    if runtime_opt.tts != 'cosyvoice' or not runtime_opt.REF_FILE:
+        return
+
+    import requests as _req
+
+    try:
+        with open(runtime_opt.REF_FILE, 'rb') as f:
+            response = _req.post(
+                f"{runtime_opt.TTS_SERVER}/register_zero_shot_spk",
+                data={
+                    'prompt_text': runtime_opt.REF_TEXT,
+                },
+                files={
+                    'prompt_wav': (
+                        'prompt_wav.wav',
+                        f,
+                        'audio/wav',
+                    ),
+                },
+                timeout=(5, 60),
+            )
+
+        response.raise_for_status()
+        result = response.json()
+        logger.info(
+            "CosyVoice speaker cache preloaded: spk_id=%s, cached=%s",
+            result.get('spk_id'),
+            result.get('cached'),
+        )
+    except Exception as e:
+        # Preloading is an optimization. Keep LiveTalking available when the
+        # CosyVoice service is temporarily unavailable or does not implement
+        # the speaker-registration endpoint; the TTS adapter can still use its
+        # normal fallback path when a reply is synthesized.
+        logger.warning("CosyVoice preload failed: %s", e)
+
+def start_ollama_model_keeper(
+    base_url,
+    models,
+    interval_seconds=240,
+    keep_alive="10m",
+):
+    """
+    启动时预加载 Ollama 模型，并定期刷新模型存活时间。
+
+    interval_seconds=240：每4分钟刷新一次
+    keep_alive=10m：每次要求 Ollama至少保留10分钟
+    """
+    import requests
+    import time
+
+    base_url = base_url.rstrip("/")
+    models = tuple(dict.fromkeys(model for model in models if model))
+    stop_event = Event()
+
+    def touch_models(session):
+        for model_name in models:
+            started_at = time.perf_counter()
+            try:
+                response = session.post(
+                    f"{base_url}/api/generate",
+                    json={
+                        "model": model_name,
+                        "prompt": "",
+                        "stream": False,
+                        "keep_alive": keep_alive,
+                    },
+                    timeout=(5, 180),
+                )
+                response.raise_for_status()
+                result = response.json()
+
+                elapsed = time.perf_counter() - started_at
+                load_duration = result.get("load_duration", 0) / 1_000_000_000
+
+                logger.info(
+                    "Ollama model ready | model=%s | request=%.2fs | load=%.2fs",
+                    model_name,
+                    elapsed,
+                    load_duration,
+                )
+            except Exception as exc:
+                # 预热失败不阻止 LiveTalking启动
+                logger.warning(
+                    "Ollama model preload failed | model=%s | error=%s",
+                    model_name,
+                    exc,
+                )
+
+    # 第一次同步执行：让模型加载完成后再开放网页服务
+    with requests.Session() as session:
+        touch_models(session)
+
+    # 后续后台保活
+    def keeper_worker():
+        with requests.Session() as session:
+            while not stop_event.wait(interval_seconds):
+                touch_models(session)
+
+    Thread(
+        target=keeper_worker,
+        name="ollama-model-keeper",
+        daemon=True,
+    ).start()
+
+    return stop_event
 
 def main():
     global rtc_manager, opt, model,load_avatar
@@ -187,18 +299,19 @@ def main():
     import qwen3asr_service as asr_svc
     asr_svc.get_model()
     logger.info("Qwen3-ASR 模型加载完成")
-    # 预热 CosyVoice speaker embedding 缓存
-    if opt.tts == 'cosyvoice' and opt.REF_FILE:
-        import requests as _req
-        try:
-            with open(opt.REF_FILE, 'rb') as f:
-                _req.post(f"{opt.TTS_SERVER}/preload_speaker",
-                        files={'prompt_wav': f}, timeout=30)
-            logger.info("CosyVoice speaker cache preloaded.")
-        except Exception as e:
-            logger.warning(f"CosyVoice preload failed: {e}")
+    # opt has already been initialized by parse_args() at this point.
+    preload_cosyvoice_speaker(opt)
+    appasync["ollama_keeper_stop"] = start_ollama_model_keeper(
+        base_url="http://127.0.0.1:11434",
+        models=(
+            "qwen2.5:7b",
+            opt.TRANSLATION_MODEL,
+        ),
+        interval_seconds=240,
+        keep_alive="10m",
+    )
     logger.info('start http server; http://<serverip>:'+str(opt.listenport)+'/'+pagename)
-    logger.info('如果使用webrtc，推荐访问webrtc集成前端: http://<serverip>:'+str(opt.listenport)+'/dashboard.html')
+    logger.info('如果使用webrtc，推荐访问webrtc集成前端: http://localhost:'+str(opt.listenport)+'/dashboard.html')
     def run_server(runner):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)

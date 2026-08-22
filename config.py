@@ -48,14 +48,14 @@ def parse_args():
                         help='TTS语言: zh/en/ja/ko/de/fr/es/it/ru')
     parser.add_argument('--tts', type=str, default='cosyvoice',
                         help="tts plugin: edgetts/gpt-sovits/cosyvoice/fishtts/tencent/doubao/indextts2/azuretts/qwentts")
-    parser.add_argument('--REF_FILE', type=str, default="/home/wuguinan/LiveTalking/tts/CosyVoiceREFFLIE.wav",
+    parser.add_argument('--REF_FILE', type=str, default="/home/hf/qwen3-asr/LiveTalking/tts/ref.wav",
                         help="参考文件名或语音模型ID")
-    parser.add_argument('--REF_TEXT', type=str, default="是啊。今天天气真好！你吃早饭了吗？吃的是什么东西？")
+    parser.add_argument('--REF_TEXT', type=str, default="清晨的阳光穿过窗帘，轻轻落在安静的房间里。我整理好今天的计划，准备迎接新的工作。无论遇到什么问题，我们都可以耐心分析，认真沟通，一步一步找到合适的解决办法。希望我的声音，能为你带来清晰、自然，也更温暖的交流体验。")
     parser.add_argument('--TTS_SERVER', type=str, default='http://localhost:50000')
 
     # ─── 文本翻译 ─────────────────────────────────────────
     parser.add_argument('--TRANSLATION_SERVER', type=str,
-                        default='http://113.98.61.52:11434',
+                        default='http://127.0.0.1:11434',
                         help='Ollama 翻译服务地址（可带或不带 /v1）')
     parser.add_argument('--TRANSLATION_MODEL', type=str, default='translategemma:latest',
                         help='Ollama TranslateGemma 模型名')

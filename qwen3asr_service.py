@@ -3,8 +3,8 @@ import torch
 from qwen_asr import Qwen3ASRModel
 from peft import PeftModel
 
-BASE_MODEL   = "Qwen/Qwen3-ASR-1.7B"         # 或你的本地路径
-CHECKPOINT_DIR = "/home/wuguinan/Qwen3-asr-finetuning/qlora_adapter/zh-epoch1*"   # 全量微调 or LoRA adapter 目录
+BASE_MODEL   = "/home/hf/qwen3-asr/model/models--Qwen--Qwen3-ASR-1.7B/snapshots/7278e1e70fe206f11671096ffdd38061171dd6e5"         # 或你的本地路径
+CHECKPOINT_DIR = "/home/hf/qwen3-asr/model/en/LibriSpeech/1600"   # 全量微调 or LoRA adapter 目录
 DEVICE = "cuda:0"
 
 _model = None

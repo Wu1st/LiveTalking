@@ -39,7 +39,7 @@ def _get_ollama_client():
 
                 _ollama_client = OpenAI(
                     api_key='ollama',
-                    base_url='http://113.98.61.52:11434/v1',
+                    base_url='http://127.0.0.1:11434/v1',
                 )
                 logger.info("Ollama OpenAI client initialized")
 

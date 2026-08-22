@@ -5,9 +5,8 @@ import threading
 from typing import Iterator, Callable
 
 import numpy as np
+import resampy
 import requests
-from av import AudioFrame
-from av.audio.resampler import AudioResampler
 
 from utils.logger import logger
 from .base_tts import BaseTTS, State
@@ -76,63 +75,6 @@ COSYVOICE_HTTP_CHUNK_SIZE = 4800
 
 
 _QUEUE_END = object()
-
-
-def _iter_resampled_pcm(
-    audio_stream: Iterator[bytes],
-    source_rate: int,
-    target_rate: int,
-) -> Iterator[np.ndarray]:
-    """连续地把流式 int16 单声道 PCM 重采样为 float32。
-
-    HTTP 分块边界不一定与 int16 样本边界一致，也不是音频时间边界。
-    因此这里先保留不完整的单字节，再让同一个 PyAV resampler 处理整个
-    响应流，避免逐 HTTP 块重置滤波器造成接缝、噪音和电音。
-    """
-    resampler = AudioResampler(
-        format="fltp",
-        layout="mono",
-        rate=target_rate,
-    )
-    pending_bytes = bytearray()
-
-    for chunk in audio_stream:
-        if not chunk:
-            continue
-
-        pending_bytes.extend(chunk)
-        complete_byte_count = len(pending_bytes) & ~1
-        if complete_byte_count == 0:
-            continue
-
-        pcm_bytes = bytes(pending_bytes[:complete_byte_count])
-        del pending_bytes[:complete_byte_count]
-
-        samples = np.frombuffer(pcm_bytes, dtype="<i2").astype(np.float32)
-        samples /= 32768.0
-
-        input_frame = AudioFrame.from_ndarray(
-            samples.reshape(1, -1),
-            format="fltp",
-            layout="mono",
-        )
-        input_frame.sample_rate = source_rate
-
-        for output_frame in resampler.resample(input_frame):
-            output = output_frame.to_ndarray().reshape(-1)
-            if output.size > 0:
-                yield output.astype(np.float32, copy=False)
-
-    if pending_bytes:
-        logger.warning(
-            "CosyVoice PCM stream ended with one incomplete int16 byte; dropping it"
-        )
-
-    # 刷出重采样器内部为保证滤波连续性而暂存的尾部样本。
-    for output_frame in resampler.resample(None):
-        output = output_frame.to_ndarray().reshape(-1)
-        if output.size > 0:
-            yield output.astype(np.float32, copy=False)
 
 
 def _to_bool(value, default: bool = True) -> bool:
@@ -1037,8 +979,6 @@ class CosyVoiceTTS(BaseTTS):
 
         改动：
         - 增加 audio_buffer，避免小 chunk 被丢弃；
-        - 使用一个有状态重采样器贯穿整个 HTTP 响应，避免分块接缝；
-        - 缓存落在 HTTP 分块末尾的单个字节，避免 int16 样本错位；
         - 分段时只在第一段发 start，最后一段发 end；
         - eventpoint 里附带 segment 信息，方便日志或字幕调试。
         """
@@ -1051,11 +991,18 @@ class CosyVoiceTTS(BaseTTS):
         first_frame_of_this_segment = True
         audio_buffer = np.zeros(0, dtype=np.float32)
 
-        for stream in _iter_resampled_pcm(
-            audio_stream,
-            source_rate=COSYVOICE_SERVER_SAMPLE_RATE,
-            target_rate=self.sample_rate,
-        ):
+        for chunk in audio_stream:
+            if chunk is None or len(chunk) == 0:
+                continue
+
+            stream = np.frombuffer(chunk, dtype=np.int16).astype(np.float32) / 32767.0
+
+            stream = resampy.resample(
+                x=stream,
+                sr_orig=COSYVOICE_SERVER_SAMPLE_RATE,
+                sr_new=self.sample_rate,
+            )
+
             audio_buffer = np.concatenate([audio_buffer, stream])
 
             while audio_buffer.shape[0] >= self.chunk:

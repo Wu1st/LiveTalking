@@ -429,18 +429,7 @@ class BaseAvatar:
 
             for audio_frame in audio_frames:
                 #frame,type,eventpoint = audio_frame
-                # 重采样滤波可能让原本位于 [-1, 1] 的浮点 PCM 产生少量
-                # 越界峰值。直接转换为 int16 会整数回绕并形成爆音 / 电音，
-                # 因此在送入 WebRTC 前再次清理、裁剪并安全量化。
-                audio_data = np.asarray(audio_frame.data, dtype=np.float32)
-                audio_data = np.nan_to_num(
-                    audio_data,
-                    nan=0.0,
-                    posinf=1.0,
-                    neginf=-1.0,
-                )
-                audio_data = np.clip(audio_data, -1.0, 1.0)
-                frame = np.rint(audio_data * 32767.0).astype(np.int16)
+                frame = (audio_frame.data * 32767).astype(np.int16)
 
                 # 使用统一输出接口推送音频帧
                 self.output.push_audio_frame(frame, audio_frame.userdata)
@@ -485,3 +474,4 @@ class BaseAvatar:
 
         process_quit_event.set()
         process_thread.join()
+

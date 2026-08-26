@@ -40,6 +40,7 @@ from llm import llm_response
 from translator import TranslationService
 import registry
 from server.routes import setup_routes
+from server.speech_frontend_proxy import setup_speech_frontend_proxy_routes
 from server.rtc_manager import RTCManager
 from server.session_manager import session_manager
 
@@ -282,7 +283,8 @@ def main():
     appasync.router.add_post("/offer", offer)
     
     # 注册 server/routes.py 中的通用 API 路由
-    setup_routes(appasync) 
+    setup_routes(appasync)
+    setup_speech_frontend_proxy_routes(appasync)
 
     # Configure default CORS settings.
     cors = aiohttp_cors.setup(appasync, defaults={

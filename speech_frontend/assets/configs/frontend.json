@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "product": "Speech Frontend Patent Scheme D v1.0",
+  "sample_rate": 16000,
+  "vad": {
+    "model_sha256": "1a153a22f4509e292a94e67d6f9b85e8deb25b4988682b7e174c65279d8788e3",
+    "profile_sha256": "38bc4f54b6ec580b6d8a5bc63da707035867b78a9a0cd3412d49c959ff66ebd4",
+    "frame_samples": 512,
+    "context_samples": 64
+  },
+  "pipeline": {
+    "name": "patent_scheme_d",
+    "inputs": ["raw", "wiener_dd"],
+    "base_profile": "meeting_long_pause",
+    "high_threshold": 0.775,
+    "low_threshold": 0.175,
+    "minimum_high_frames": 3,
+    "minimum_candidate_duration_ms": 2000,
+    "anchor_credit_frames": 2.0,
+    "lookback_seconds": 0.25,
+    "capacity_seconds": 1.0,
+    "maturity_seconds": 4.0,
+    "expiry_seconds": 12.0,
+    "minimum_anchor_overlap_seconds": 0.032,
+    "base_result_monotonic": true
+  },
+  "wiener_decision_directed": {
+    "noise_psd": "low_percentile",
+    "decision_directed_alpha": 0.98,
+    "gain_floor": 0.02,
+    "algorithmic_lookahead_ms": 12.5
+  }
+}

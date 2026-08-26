@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "stage": "B.2",
+  "frozen_before_first_run": true,
+  "sample_rate": 16000,
+  "profiles": {
+    "sensitive": {
+      "threshold": 0.35,
+      "min_speech_duration_ms": 100,
+      "min_silence_duration_ms": 50,
+      "speech_pad_ms": 50
+    },
+    "default": {
+      "threshold": 0.5,
+      "min_speech_duration_ms": 250,
+      "min_silence_duration_ms": 100,
+      "speech_pad_ms": 30
+    },
+    "conservative": {
+      "threshold": 0.65,
+      "min_speech_duration_ms": 300,
+      "min_silence_duration_ms": 200,
+      "speech_pad_ms": 20
+    },
+    "meeting_long_pause": {
+      "threshold": 0.45,
+      "min_speech_duration_ms": 150,
+      "min_silence_duration_ms": 500,
+      "speech_pad_ms": 40
+    }
+  },
+  "eligible_data": [
+    "SyntheticVAD high-confidence pilot",
+    "AliMeeting far",
+    "AISHELL-4 visible external validation",
+    "ESC-50 clear noise validation"
+  ],
+  "excluded_data": [
+    "AliMeeting near",
+    "all uncertain intervals",
+    "VoxConverse v0.3 locked external test"
+  ],
+  "meeting_metric_policy": "Meeting TextGrid may support coarse duration TP/FP/FN only; boundary error never selects a profile."
+}

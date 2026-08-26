@@ -53,8 +53,11 @@ from typing import Dict
 from utils.logger import logger
 import copy
 import gc
+import os
+import time
 
 import qwen3asr_service as asr_svc
+from utils.runtime_snapshot import log_runtime_ready, log_runtime_snapshot
 
 app = Flask(__name__)
 #sockets = Sockets(app)
@@ -122,6 +125,7 @@ def preload_cosyvoice_speaker(runtime_opt):
                 f"{runtime_opt.TTS_SERVER}/register_zero_shot_spk",
                 data={
                     'prompt_text': runtime_opt.REF_TEXT,
+                    'trace_id': 'startup-speaker-preload',
                 },
                 files={
                     'prompt_wav': (
@@ -220,9 +224,11 @@ def start_ollama_model_keeper(
 
 def main():
     global rtc_manager, opt, model,load_avatar
+    startup_started = time.perf_counter()
     # 解析命令行参数
     from config import parse_args
     opt = parse_args()
+    log_runtime_snapshot(opt, os.path.dirname(os.path.abspath(__file__)))
 
     # ─── 加载 avatar 插件（触发 @register 注册）──────────────────────
     _avatar_modules = {
@@ -310,6 +316,7 @@ def main():
         interval_seconds=240,
         keep_alive="10m",
     )
+    log_runtime_ready(startup_started)
     logger.info('start http server; http://<serverip>:'+str(opt.listenport)+'/'+pagename)
     logger.info('如果使用webrtc，推荐访问webrtc集成前端: http://localhost:'+str(opt.listenport)+'/dashboard.html')
     def run_server(runner):

@@ -28,6 +28,8 @@ class BaseTTS:
 
         self.msgqueue = Queue()
         self.state = State.RUNNING
+        self.current_text_chars = 0
+        self.current_request_started = None
 
     def flush_talk(self):
         self.msgqueue.queue.clear()
@@ -70,7 +72,13 @@ class BaseTTS:
                 text_chars=len(msg[0]),
                 queue_size=self.msgqueue.qsize(),
             )
-            self.txt_to_audio(msg)
+            self.current_text_chars = len(msg[0])
+            self.current_request_started = time.perf_counter()
+            try:
+                self.txt_to_audio(msg)
+            finally:
+                self.current_text_chars = 0
+                self.current_request_started = None
         self.stop_tts()
         logger.info('ttsreal thread stop')
     

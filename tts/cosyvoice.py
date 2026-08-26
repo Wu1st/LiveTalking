@@ -489,7 +489,13 @@ class CosyVoiceTTS(BaseTTS):
                     server_url=self.opt.TTS_SERVER,
                 )
 
-    def get_or_register_spk(self, reffile: str, reftext: str, server_url: str) -> str | None:
+    def get_or_register_spk(
+        self,
+        reffile: str,
+        reftext: str,
+        server_url: str,
+        trace: dict | None = None,
+    ) -> str | None:
         """
         尝试把参考音频注册为 zero-shot speaker。
         成功后，后续请求只传 spk_id + text，不再重复上传 prompt_wav。
@@ -509,6 +515,8 @@ class CosyVoiceTTS(BaseTTS):
         payload = {
             "prompt_text": reftext,
         }
+        if trace and trace.get("trace_id"):
+            payload["trace_id"] = trace["trace_id"]
 
         try:
             with open(reffile, "rb") as f:
@@ -578,6 +586,7 @@ class CosyVoiceTTS(BaseTTS):
                 reffile,
                 reftext,
                 server_url,
+                trace=trace,
             )
 
             if spk_id:
@@ -587,6 +596,8 @@ class CosyVoiceTTS(BaseTTS):
                     "tts_text": text,
                     "spk_id": spk_id,
                 }
+                if trace and trace.get("trace_id"):
+                    payload["trace_id"] = trace["trace_id"]
 
                 res = requests.post(
                     f"{server_url}/inference_zero_shot_by_spk",
@@ -601,6 +612,8 @@ class CosyVoiceTTS(BaseTTS):
                     "tts_text": text,
                     "prompt_text": reftext,
                 }
+                if trace and trace.get("trace_id"):
+                    payload["trace_id"] = trace["trace_id"]
 
                 with open(reffile, "rb") as f:
                     files = [
@@ -693,6 +706,8 @@ class CosyVoiceTTS(BaseTTS):
         payload = {
             "tts_text": text,
         }
+        if trace and trace.get("trace_id"):
+            payload["trace_id"] = trace["trace_id"]
 
         try:
             with open(reffile, "rb") as f:

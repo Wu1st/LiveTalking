@@ -181,12 +181,73 @@ class BaseAvatar:
 
         return stream
 
-    def flush_talk(self):
+    def _interrupt_snapshot(self):
+        """Read queue and worker state without changing playback behavior."""
+        snapshot = {
+            "session_id": str(self.sessionid),
+            "speaking": bool(self.speaking),
+            "render_queue": self.res_frame_queue.qsize()
+            if hasattr(self, "res_frame_queue") else None,
+            "custom_audiotype": self.custom_audiotype,
+        }
+
+        if hasattr(self, "tts"):
+            snapshot.update({
+                "tts_state": getattr(getattr(self.tts, "state", None), "name", None),
+                "tts_text_queue": self.tts.msgqueue.qsize()
+                if hasattr(self.tts, "msgqueue") else None,
+                "tts_current_text_chars": getattr(self.tts, "current_text_chars", None),
+            })
+            current_started = getattr(self.tts, "current_request_started", None)
+            if isinstance(current_started, (int, float)):
+                snapshot["tts_current_elapsed_ms"] = (
+                    time.perf_counter() - current_started
+                ) * 1000
+
+        if hasattr(self, "asr"):
+            snapshot.update({
+                "asr_input_queue": self.asr.queue.qsize()
+                if hasattr(self.asr, "queue") else None,
+                "asr_output_queue": self.asr.output_queue.qsize()
+                if hasattr(self.asr, "output_queue") else None,
+                "asr_feature_queue": self.asr.feat_queue.qsize()
+                if hasattr(self.asr, "feat_queue") else None,
+                "asr_context_frames": len(self.asr.frames)
+                if hasattr(self.asr, "frames") else None,
+            })
+
+        player = getattr(getattr(self, "output", None), "_player", None)
+        if player is not None and hasattr(player, "get_queue_sizes"):
+            snapshot.update(player.get_queue_sizes())
+
+        try:
+            from llm import get_active_llm_calls
+            snapshot["active_llm_calls"] = get_active_llm_calls(str(self.sessionid))
+        except Exception:
+            snapshot["active_llm_calls"] = None
+
+        return snapshot
+
+    def flush_talk(self, trace=None, trigger="unknown"):
+        started = time.perf_counter()
+        emit_latency(
+            "interrupt_snapshot_before",
+            trace,
+            trigger=trigger,
+            **self._interrupt_snapshot(),
+        )
         if hasattr(self, 'tts') and hasattr(self.tts, 'flush_talk'):
             self.tts.flush_talk()
         if hasattr(self, 'asr') and hasattr(self.asr, 'flush_talk'):
             self.asr.flush_talk()
-        self.custom_audiotype = 0  
+        self.custom_audiotype = 0
+        emit_latency(
+            "interrupt_snapshot_after",
+            trace,
+            trigger=trigger,
+            flush_duration_ms=(time.perf_counter() - started) * 1000,
+            **self._interrupt_snapshot(),
+        )
 
     # def flush(self):
     #     self.flush_talk()

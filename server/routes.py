@@ -18,6 +18,7 @@ from utils.latency import (
     optional_float,
     trace_from_id,
 )
+from server.beats_client import BEATS_CLIENT_KEY, beats_client_context
 
 import tempfile
 import os
@@ -54,6 +55,7 @@ def get_session(request, sessionid: str):
 
 MAX_TRANSCRIBE_BYTES = 80 * 1024 * 1024
 MAX_TRANSLATION_CHARS = 20_000
+MAX_ACOUSTIC_BYTES = 25 * 1024 * 1024
 
 
 def _uploaded_audio_suffix(filename: str) -> str:
@@ -123,7 +125,7 @@ async def human(request):
 
         if params.get('interrupt'):
             emit_latency("interrupt_requested", trace, trigger="human")
-            avatar_session.flush_talk()
+            avatar_session.flush_talk(trace=trace, trigger="human")
 
         datainfo = attach_trace({}, trace)
         if params.get('tts'):  # tts 参数透传（voice, emotion 等）
@@ -165,7 +167,7 @@ async def interrupt_talk(request):
             emit_latency("interrupt_error", trace, error="session not found")
             return json_error("session not found")
         emit_latency("interrupt_requested", trace, trigger="button")
-        avatar_session.flush_talk()
+        avatar_session.flush_talk(trace=trace, trigger="button")
         emit_latency("interrupt_returned", trace)
         return json_ok({"trace_id": trace["trace_id"]})
     except Exception as e:
@@ -372,6 +374,77 @@ async def humanaudio_monitor(request):
         emit_latency("audio_monitor_error", trace, error=repr(e))
         logger.exception('humanaudio_monitor exception:')
         return json_error(str(e))
+
+
+async def beats_health(request):
+    """Expose the local BEATs health state through the LiveTalking server."""
+    client = request.app.get(BEATS_CLIENT_KEY)
+    if client is None:
+        return json_error("BEATs客户端未初始化")
+    try:
+        return json_ok(await client.health())
+    except Exception as exc:
+        logger.warning("BEATs health check failed: %s", exc)
+        return json_error("BEATs服务暂不可用")
+
+
+async def analyze_environment(request):
+    """Analyze a continuous environment-audio window without invoking ASR/LLM/TTS."""
+    request_started = time.perf_counter()
+    trace = None
+    try:
+        form = await request.post()
+        fileobj = form.get("file")
+        if fileobj is None or not hasattr(fileobj, "file"):
+            return json_error("缺少环境音频文件")
+
+        filebytes = fileobj.file.read()
+        if not filebytes:
+            return json_error("上传的环境音频为空")
+        if len(filebytes) > MAX_ACOUSTIC_BYTES:
+            return json_error("环境音频文件不能超过 25 MB")
+
+        sessionid = str(form.get("sessionid", "0"))
+        trace = new_trace(
+            sessionid,
+            "beats_environment",
+            started_monotonic=request_started,
+        )
+        client = request.app.get(BEATS_CLIENT_KEY)
+        if client is None:
+            return json_error("BEATs客户端未初始化")
+
+        filename = Path(getattr(fileobj, "filename", "environment.webm") or "environment.webm").name
+        content_type = getattr(fileobj, "content_type", None) or "application/octet-stream"
+        result = await client.analyze(
+            filebytes,
+            filename=filename,
+            content_type=content_type,
+        )
+        elapsed_ms = (time.perf_counter() - request_started) * 1000
+        logger.info(
+            "BEATs environment | session=%s | text=%s | decode_ms=%s | inference_ms=%s | total_ms=%.2f",
+            sessionid,
+            result.get("text"),
+            result.get("decode_ms"),
+            result.get("inference_ms"),
+            elapsed_ms,
+        )
+        emit_latency(
+            "beats_final",
+            trace,
+            bytes=len(filebytes),
+            audio_duration_s=result.get("audio_duration_seconds"),
+            decode_ms=result.get("decode_ms"),
+            inference_ms=result.get("inference_ms"),
+            total_ms=elapsed_ms,
+            event_count=len(result.get("events") or []),
+        )
+        return json_ok(result)
+    except Exception as exc:
+        emit_latency("beats_error", trace, error=repr(exc))
+        logger.exception("BEATs environment analysis failed")
+        return json_error("环境声音分析暂不可用")
 
 
 async def transcribe_audio(request):
@@ -663,9 +736,12 @@ async def is_speaking(request):
 
 def setup_routes(app):
     """注册所有路由到 aiohttp app"""
+    app.cleanup_ctx.append(beats_client_context)
     app.router.add_post("/human", human)
     app.router.add_post("/humanaudio", humanaudio)
     app.router.add_post("/humanaudio_monitor", humanaudio_monitor)
+    app.router.add_get("/api/beats/health", beats_health)
+    app.router.add_post("/analyze_environment", analyze_environment)
     app.router.add_post("/transcribe_audio", transcribe_audio)
     app.router.add_post("/translate_text", translate_text)
     app.router.add_post("/api/metrics/client", client_metrics)

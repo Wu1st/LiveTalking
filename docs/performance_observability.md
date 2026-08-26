@@ -36,8 +36,7 @@ freeze、NACK、PLI 和音频 concealment。浏览器不支持某项指标时，
 仅统计智能对话的音频链路：
 
 ```bash
-/home/wuguinan/miniconda3/envs/nerfstream/bin/python \
-  tools/analyze_latency.py latency_metrics.jsonl \
+python tools/analyze_latency.py latency_metrics.jsonl \
   --source audio_chat \
   --source browser \
   --output latency_report.txt
@@ -46,15 +45,14 @@ freeze、NACK、PLI 和音频 concealment。浏览器不支持某项指标时，
 统计所有入口：
 
 ```bash
-/home/wuguinan/miniconda3/envs/nerfstream/bin/python \
-  tools/analyze_latency.py latency_metrics.jsonl \
+python tools/analyze_latency.py latency_metrics.jsonl \
   --output latency_report.txt
 ```
 
 若要同时分析轮转文件，把文件按从旧到新的顺序全部传入：
 
 ```bash
-/home/wuguinan/miniconda3/envs/nerfstream/bin/python tools/analyze_latency.py \
+python tools/analyze_latency.py \
   latency_metrics.jsonl.5 latency_metrics.jsonl.4 latency_metrics.jsonl.3 \
   latency_metrics.jsonl.2 latency_metrics.jsonl.1 latency_metrics.jsonl
 ```
@@ -72,3 +70,9 @@ freeze、NACK、PLI 和音频 concealment。浏览器不支持某项指标时，
 
 P95 在样本少于 20 条时只能用于观察。正式对比应使用固定测试语料，并至少采集
 50 次热状态对话及 10 次打断场景。
+
+服务器端完整操作流程、CosyVoice 内部指标、GPU 采样与组件基准测试见：
+
+```text
+/home/hf/qwen3-asr/observability/README.md
+```

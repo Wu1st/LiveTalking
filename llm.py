@@ -28,6 +28,24 @@ DEFAULT_SYSTEM_PROMPT = "你是一个知识助手，尽量以简短、口语化�
 # 使用懒加载可保持模块导入轻量；加锁避免多个会话首次请求时重复初始化。
 _ollama_client = None
 _ollama_client_lock = threading.Lock()
+_active_llm_calls: Dict[str, int] = {}
+_active_llm_calls_lock = threading.Lock()
+
+
+def _change_active_llm_calls(sessionid: str, delta: int) -> int:
+    with _active_llm_calls_lock:
+        count = max(0, _active_llm_calls.get(sessionid, 0) + delta)
+        if count:
+            _active_llm_calls[sessionid] = count
+        else:
+            _active_llm_calls.pop(sessionid, None)
+        return count
+
+
+def get_active_llm_calls(sessionid: str) -> int:
+    """Return active LLM workers for observability; it does not cancel them."""
+    with _active_llm_calls_lock:
+        return _active_llm_calls.get(str(sessionid), 0)
 
 
 def _get_ollama_client():
@@ -83,10 +101,14 @@ def clear_history(sessionid: str):
 
 def llm_response(message, avatar_session: 'BaseAvatar', datainfo: dict = {}):
     trace = None
+    sessionid = str(getattr(avatar_session.opt, 'sessionid', '0'))
+    active_registered = False
     try:
         opt = avatar_session.opt
-        sessionid = str(getattr(opt, 'sessionid', '0'))
         datainfo, trace = ensure_trace(datainfo, sessionid, "llm_direct")
+        active_calls = _change_active_llm_calls(sessionid, 1)
+        active_registered = True
+        emit_latency("llm_worker_registered", trace, active_llm_calls=active_calls)
 
         # 取出该 session 的历史
         history = get_history(sessionid)
@@ -230,3 +252,7 @@ def llm_response(message, avatar_session: 'BaseAvatar', datainfo: dict = {}):
         history = get_history(str(getattr(avatar_session.opt, 'sessionid', '0')))
         if history and history[-1]['role'] == 'user':
             history.pop()
+    finally:
+        if active_registered:
+            active_calls = _change_active_llm_calls(sessionid, -1)
+            emit_latency("llm_worker_released", trace, active_llm_calls=active_calls)

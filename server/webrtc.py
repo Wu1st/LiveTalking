@@ -217,6 +217,13 @@ class HumanPlayer:
     def get_buffer_size(self) -> int:
         return self.__video._queue.qsize()
 
+    def get_queue_sizes(self) -> dict:
+        """Read-only media queue snapshot used by interrupt diagnostics."""
+        return {
+            "webrtc_audio_queue": self.__audio._queue.qsize(),
+            "webrtc_video_queue": self.__video._queue.qsize(),
+        }
+
     def notify(self,eventpoint):
         if self.__container is not None:
             self.__container.notify(eventpoint)

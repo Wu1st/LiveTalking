@@ -139,6 +139,10 @@ graph TD
 
 ## 4. More Usage
 使用说明: <https://livetalking-doc.readthedocs.io/>
+
+### OCR 与文档翻译
+
+本分支可通过 LiveTalking 的 `8010` 端口统一上传 PDF/多页 TIFF，先执行 OCR，再按需翻译，并可把原文或译文交给数字人播报。配置与接口示例见 [OCR 与翻译统一 API](docs/document-api.md)。
   
 ## 5. Docker Run  
 不需要前面的安装，直接运行。
@@ -196,4 +200,3 @@ wav2lip256显卡3060以上即可，musetalk需要3080Ti以上。
 * Email: lipku@foxmail.com  
 * 微信公众号：数字人技术    
 <img src="./assets/qrcode-wechat.jpg" align="middle" />
-

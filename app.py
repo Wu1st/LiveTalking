@@ -41,6 +41,7 @@ from translator import TranslationService
 import registry
 from server.routes import setup_routes
 from server.speech_frontend_proxy import setup_speech_frontend_proxy_routes
+from server.document_proxy import setup_document_proxy_routes
 from server.rtc_manager import RTCManager
 from server.session_manager import session_manager
 
@@ -271,7 +272,8 @@ def main():
         rendthrd.start()
 
     #############################################################################
-    appasync = web.Application(client_max_size=1024**2*100)
+    max_upload_mb = int(os.getenv("LIVETALKING_MAX_UPLOAD_MB", "1024"))
+    appasync = web.Application(client_max_size=1024**2*max_upload_mb)
     appasync["llm_response"] = llm_response
     appasync["translation_service"] = TranslationService(
         base_url=opt.TRANSLATION_SERVER,
@@ -285,6 +287,7 @@ def main():
     # 注册 server/routes.py 中的通用 API 路由
     setup_routes(appasync)
     setup_speech_frontend_proxy_routes(appasync)
+    setup_document_proxy_routes(appasync)
 
     # Configure default CORS settings.
     cors = aiohttp_cors.setup(appasync, defaults={

@@ -585,7 +585,7 @@ input[type=range] { accent-color:var(--primary); }
 .translation-status i { color:var(--primary); }
 .translation-submit { min-width:150px; min-height:42px; }
 
-/* 文档识别外形 */
+/* 文档 OCR 与翻译 */
 .document-card { flex:1; min-height:610px; padding:28px 30px 30px; display:flex; flex-direction:column; }
 .document-controls { display:grid; grid-template-columns:repeat(3,minmax(180px,235px)); gap:10px; }
 .field-select { display:flex; flex-direction:column; gap:7px; }
@@ -601,8 +601,9 @@ input[type=range] { accent-color:var(--primary); }
 .document-dropzone {
   flex:1; min-height:340px; padding:30px; display:flex; flex-direction:column; align-items:center;
   justify-content:center; border:1.5px dashed #8fa8ff; border-radius:16px; background:#fdfdff;
-  text-align:center;
+  text-align:center; transition:border-color .2s,background .2s,transform .2s;
 }
+.document-dropzone.drag { border-color:var(--primary); background:#f2f6ff; transform:translateY(-1px); }
 .document-illustration {
   position:relative; width:112px; height:82px; margin-bottom:22px;
 }
@@ -619,7 +620,19 @@ input[type=range] { accent-color:var(--primary); }
 .document-dropzone strong { color:#313d54; font-size:15px; }
 .document-dropzone p { margin:8px 0 20px; color:#8e99ab; font-size:12px; }
 .document-actions { display:flex; gap:10px; }
-.document-note { margin-top:13px; color:#a0a9b8; font-size:10px; }
+.document-file-input { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
+.document-note { margin-top:13px; color:#7d899d; font-size:11px; overflow-wrap:anywhere; }
+.document-note.error { color:var(--danger); }
+.document-progress-wrap { width:min(560px,100%); margin-top:20px; display:none; text-align:left; }
+.document-progress-wrap.visible { display:block; }
+.document-progress-head { display:flex; align-items:center; justify-content:space-between; gap:12px; color:#536078; font-size:12px; }
+.document-progress-track { height:8px; margin:8px 0; overflow:hidden; border-radius:999px; background:#e8edf7; }
+.document-progress-bar { width:0; height:100%; border-radius:inherit; background:linear-gradient(90deg,var(--primary),#7795ff); transition:width .25s; }
+.document-result-actions { margin-top:12px; display:none; flex-wrap:wrap; justify-content:center; gap:8px; }
+.document-result-actions.visible { display:flex; }
+.document-result-actions .btn { text-decoration:none; }
+.document-checkbox { display:flex; align-items:center; gap:8px; cursor:pointer; }
+.document-checkbox input { width:16px; height:16px; accent-color:var(--primary); }
 
 @media (max-width:1180px) {
   .mode-sidebar { width:180px; }
@@ -886,16 +899,26 @@ input[type=range] { accent-color:var(--primary); }
       <section class="mode-page" id="page-document" data-page="document">
         <section class="surface-card document-card">
           <div class="document-controls">
-            <div class="field-select"><label for="document-language">文档语言</label><select id="document-language"><option>自动检测</option><option>简体中文</option><option>英语</option></select></div>
-            <div class="field-select"><label for="document-layout">识别方式</label><select id="document-layout"><option>保留原文档布局</option><option>仅提取正文文字</option></select></div>
-            <div class="field-select"><label for="document-output">输出格式</label><select id="document-output"><option>可编辑文本</option><option>结构化文档</option></select></div>
+            <div class="field-select"><label for="document-language">原文语言（翻译时）</label><select id="document-language"><option value="en">英语</option><option value="ja">日语</option></select></div>
+            <div class="field-select"><label for="document-confidence">最低 OCR 置信度</label><select id="document-confidence"><option value="0.5">标准 · 0.50</option><option value="0.3">宽松 · 0.30</option><option value="0.7">严格 · 0.70</option></select></div>
+            <div class="field-select"><label for="document-output">首选下载格式</label><select id="document-output"><option value="txt">可编辑文本</option><option value="json">结构化 JSON</option></select></div>
           </div>
-          <div class="document-options"><div class="option-group"><strong>版面处理</strong><span class="option-pill">段落对齐</span><span>表格识别</span></div><div class="option-group"><strong>图片文字</strong><span class="option-pill">一并识别</span></div></div>
-          <div class="document-dropzone">
+          <div class="document-options"><label class="document-checkbox" for="document-translate"><input id="document-translate" type="checkbox"><strong>OCR 后翻译成中文</strong></label><div class="option-group"><strong>处理范围</strong><span class="option-pill">PDF / 多页 TIFF</span><span>最多 600 页</span></div></div>
+          <div class="document-dropzone" id="document-dropzone">
+            <input class="document-file-input" id="document-file" type="file" accept=".pdf,.tif,.tiff,application/pdf,image/tiff">
             <div class="document-illustration" aria-hidden="true"><span class="doc-sheet back-left"></span><span class="doc-sheet back-right"></span><span class="doc-sheet front"></span></div>
-            <strong>添加需要识别的文档</strong><p>支持 DOCX、DOC、PDF、PPTX、XLSX、HTML、CSV、TXT 与常见图片格式</p>
-            <div class="document-actions"><button class="btn btn-ghost" type="button" disabled><i class="bi bi-folder-plus"></i> 添加文件夹</button><button class="btn btn-ghost" type="button" disabled><i class="bi bi-file-earmark-plus"></i> 添加文档</button><button class="btn btn-primary" type="button" disabled><i class="bi bi-stars"></i> 开始识别</button></div>
-            <span class="document-note">当前仅完成页面外形，文档 OCR 与解析功能将在后续接入</span>
+            <strong>选择或拖入需要识别的文档</strong><p>系统始终先 OCR；勾选后继续翻译，并保留逐页文字与坐标</p>
+            <div class="document-actions"><button class="btn btn-ghost" id="document-select" type="button"><i class="bi bi-file-earmark-plus"></i> 选择文档</button><button class="btn btn-primary" id="document-submit" type="button" disabled><i class="bi bi-stars"></i> 开始识别</button></div>
+            <span class="document-note" id="document-note">正在连接 OCR / 翻译服务…</span>
+            <div class="document-progress-wrap" id="document-progress-wrap" aria-live="polite">
+              <div class="document-progress-head"><span id="document-progress-label">等待上传</span><span id="document-progress-count">0 / — 页</span></div>
+              <div class="document-progress-track"><div class="document-progress-bar" id="document-progress-bar"></div></div>
+            </div>
+            <div class="document-result-actions" id="document-result-actions">
+              <a class="btn btn-primary" id="document-download-primary" href="#"><i class="bi bi-download"></i> 下载结果</a>
+              <a class="btn btn-ghost" id="document-download-json" href="#"><i class="bi bi-filetype-json"></i> 下载 JSON</a>
+              <button class="btn btn-ghost" id="document-publish" type="button"><i class="bi bi-person-video3"></i> 发送到数字人</button>
+            </div>
           </div>
         </section>
       </section>
@@ -1922,10 +1945,174 @@ $(document).ready(function () {
     lastAcousticText = ''; lastAcousticAt = 0;
   });
 
+  // ── 文档 OCR / 翻译：通过 LiveTalking 同源代理访问独立 GPU 服务
+  let documentFile = null;
+  let documentServiceReady = false;
+  let documentPollTimer = null;
+  let documentJobId = null;
+  let documentJobTranslated = false;
+
+  function setDocumentNote(text, isError=false) {
+    $('#document-note').text(text).toggleClass('error', isError);
+  }
+
+  function updateDocumentSubmit() {
+    $('#document-submit').prop('disabled', !documentServiceReady || !documentFile);
+  }
+
+  async function documentError(response) {
+    try {
+      const payload = await response.json();
+      return payload.detail || payload.msg || ('请求失败：HTTP ' + response.status);
+    } catch (_) {
+      return '请求失败：HTTP ' + response.status;
+    }
+  }
+
+  function chooseDocument(file) {
+    if (!file) return;
+    if (!/\.(pdf|tiff?)$/i.test(file.name || '')) {
+      documentFile = null;
+      setDocumentNote('仅支持 PDF、TIF 和 TIFF 文件。', true);
+      updateDocumentSubmit();
+      return;
+    }
+    documentFile = file;
+    setDocumentNote('已选择：' + file.name + '（' + Math.max(1, Math.round(file.size / 1024)) + ' KB）');
+    $('#document-result-actions').removeClass('visible');
+    updateDocumentSubmit();
+  }
+
+  $('#document-select').click(() => $('#document-file').trigger('click'));
+  $('#document-file').change(function () { chooseDocument(this.files && this.files[0]); });
+  ['dragenter','dragover'].forEach(name => $('#document-dropzone').on(name, event => {
+    event.preventDefault(); event.stopPropagation(); $('#document-dropzone').addClass('drag');
+  }));
+  ['dragleave','drop'].forEach(name => $('#document-dropzone').on(name, event => {
+    event.preventDefault(); event.stopPropagation(); $('#document-dropzone').removeClass('drag');
+  }));
+  $('#document-dropzone').on('drop', event => {
+    const transfer = event.originalEvent && event.originalEvent.dataTransfer;
+    chooseDocument(transfer && transfer.files && transfer.files[0]);
+  });
+
+  function finishDocumentJob(state) {
+    clearTimeout(documentPollTimer);
+    documentPollTimer = null;
+    updateDocumentSubmit();
+    const available = Boolean(state.result_available);
+    const translated = Boolean(state.translate);
+    documentJobTranslated = translated;
+    $('#document-progress-bar').css('width', '100%');
+    if (!available) {
+      const message = state.error && (state.error.message || state.error.detail);
+      setDocumentNote(message || ('任务结束：' + state.status), true);
+      return;
+    }
+    setDocumentNote(translated ? 'OCR 和翻译完成，可以下载或发送到数字人。' : 'OCR 完成，可以下载或发送到数字人。');
+    const selected = $('#document-output').val();
+    const primaryFormat = selected === 'json' ? (translated ? 'bilingual_json' : 'json') : (translated ? 'translated_txt' : 'txt');
+    $('#document-download-primary').attr('href', '/api/document/jobs/' + documentJobId + '/download?format=' + primaryFormat);
+    $('#document-download-json').attr('href', '/api/document/jobs/' + documentJobId + '/download?format=' + (translated ? 'bilingual_json' : 'json'));
+    $('#document-result-actions').addClass('visible');
+  }
+
+  async function pollDocumentJob() {
+    try {
+      const response = await fetch('/api/document/jobs/' + documentJobId, {cache:'no-store'});
+      if (!response.ok) throw new Error(await documentError(response));
+      const state = await response.json();
+      const total = Number(state.page_count || 0);
+      const completed = Number(state.completed_pages || 0);
+      const percent = total ? Math.min(100, completed / total * 100) : 2;
+      $('#document-progress-bar').css('width', percent + '%');
+      $('#document-progress-count').text(completed + ' / ' + (total || '—') + ' 页');
+      const phase = state.phase === 'translation' ? 'OCR 已完成，正在翻译' : (total ? '正在识别文档' : '正在解析并加载模型');
+      $('#document-progress-label').text(phase + ' · ' + state.status);
+      if (['completed','partial','partial_failed','failed','cancelled'].includes(state.status)) {
+        finishDocumentJob(state);
+        return;
+      }
+      documentPollTimer = setTimeout(pollDocumentJob, 1000);
+    } catch (error) {
+      setDocumentNote(error.message || '读取任务进度失败。', true);
+      updateDocumentSubmit();
+    }
+  }
+
+  $('#document-submit').click(async function () {
+    if (!documentFile || !documentServiceReady) return;
+    clearTimeout(documentPollTimer);
+    documentPollTimer = null;
+    documentJobId = null;
+    documentJobTranslated = $('#document-translate').prop('checked');
+    $(this).prop('disabled', true);
+    $('#document-result-actions').removeClass('visible');
+    $('#document-progress-wrap').addClass('visible');
+    $('#document-progress-bar').css('width', '2%');
+    $('#document-progress-label').text('正在上传文档');
+    $('#document-progress-count').text('0 / — 页');
+    setDocumentNote('正在上传：' + documentFile.name);
+    const form = new FormData();
+    form.append('file', documentFile);
+    const params = new URLSearchParams({
+      translate: String(documentJobTranslated),
+      source_language: $('#document-language').val(),
+      target_language: 'zh',
+      min_confidence: $('#document-confidence').val()
+    });
+    try {
+      const response = await fetch('/api/document/jobs?' + params.toString(), {method:'POST', body:form});
+      if (!response.ok) throw new Error(await documentError(response));
+      const job = await response.json();
+      documentJobId = job.job_id;
+      $('#document-progress-label').text('任务已提交 · queued');
+      pollDocumentJob();
+    } catch (error) {
+      setDocumentNote(error.message || '文档提交失败。', true);
+      updateDocumentSubmit();
+    }
+  });
+
+  $('#document-publish').click(async function () {
+    if (!documentJobId) return;
+    $(this).prop('disabled', true);
+    try {
+      const response = await fetch('/api/document/jobs/' + documentJobId + '/livetalking', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({sessionid:sid(), mode:'echo', content:documentJobTranslated ? 'translated' : 'source', interrupt:true})
+      });
+      if (!response.ok) throw new Error(await documentError(response));
+      setDocumentNote('文档文字已发送到当前数字人会话。');
+    } catch (error) {
+      setDocumentNote(error.message || '发送到数字人失败。', true);
+    } finally {
+      $(this).prop('disabled', false);
+    }
+  });
+
+  fetch('/api/document/health', {cache:'no-store'})
+    .then(async response => {
+      if (!response.ok) throw new Error(await documentError(response));
+      return response.json();
+    })
+    .then(health => {
+      documentServiceReady = true;
+      setDocumentNote('OCR / 翻译服务在线 · ' + health.runtime + ' · ' + health.device);
+      updateDocumentSubmit();
+    })
+    .catch(error => {
+      documentServiceReady = false;
+      setDocumentNote('OCR / 翻译服务未连接：' + error.message, true);
+      updateDocumentSubmit();
+    });
+
   window.addEventListener('beforeunload', () => {
     if (vadActive) stopVAD();
     if (monitorActive) stopMonitor();
     if (transcribeEnvActive) stopTranscribeEnvironment();
+    clearTimeout(documentPollTimer);
   });
 });
 </script>

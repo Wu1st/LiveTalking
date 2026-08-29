@@ -37,9 +37,17 @@ not committed to Git.
 curl -X POST http://SERVER:18081/v1/audio/analyze \
   -H "X-API-Key: $CONTENT_ANALYSIS_API_KEY" \
   -F "file=@conversation.wav" \
-  -F "question=概括对话并分析Speaker之间的关系" \
-  -F "tasks=summary,qa,relationships,speakers,emotion,scene"
+  -F "question=梳理内容如何推进，并分析Speaker之间的观点和关系" \
+  -F "tasks=digest,summary,qa,relationships,speakers,emotion,scene" \
+  -F "content_type_hint=auto" \
+  -F 'speaker_aliases={"Speaker_00":"张三","Speaker_01":"李四"}'
 ```
+
+`content_digest` is not a fixed meeting template. It classifies the content as
+meeting, interview, customer service, lecture, daily conversation or other,
+then returns an evidence-linked overview, topic progression and speaker
+contributions. Decisions and action items are kept empty for non-meeting
+content unless the transcript explicitly contains them.
 
 `emotion.scope=whole_audio` means the emotion result must not be attributed to
 an individual speaker. When Qwen3-ASR text differs from the diarization

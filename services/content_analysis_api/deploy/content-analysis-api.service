@@ -1,0 +1,20 @@
+[Unit]
+Description=Multimodal conversation content analysis API
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/hf/qwen3-asr/LiveTalking/services/content_analysis_api
+Environment=PYTHONUNBUFFERED=1
+Environment=CONTENT_ANALYSIS_REQUIRE_API_KEY=1
+Environment=CONTENT_ANALYSIS_API_KEY_FILE=/home/hf/.config/content-analysis-api.key
+Environment=CONTENT_ANALYSIS_MAX_CONCURRENCY=2
+ExecStart=/home/hf/.conda/envs/qwen3-asr/bin/python -m uvicorn app:app --host 0.0.0.0 --port 18081 --workers 1
+Restart=always
+RestartSec=3
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=default.target

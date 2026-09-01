@@ -1,0 +1,3164 @@
+[
+  {
+    "class_id": 0,
+    "label_id": "/m/078jl",
+    "en": "Snake",
+    "zh": "蛇"
+  },
+  {
+    "class_id": 1,
+    "label_id": "/m/07rjwbb",
+    "en": "Hiss",
+    "zh": "嘶嘶声"
+  },
+  {
+    "class_id": 2,
+    "label_id": "/m/04rlf",
+    "en": "Music",
+    "zh": "音乐"
+  },
+  {
+    "class_id": 3,
+    "label_id": "/m/07qb_dv",
+    "en": "Scratch",
+    "zh": "刮擦声"
+  },
+  {
+    "class_id": 4,
+    "label_id": "/t/dd00125",
+    "en": "Inside, small room",
+    "zh": "室内，内部"
+  },
+  {
+    "class_id": 5,
+    "label_id": "/m/02sgy",
+    "en": "Electric guitar",
+    "zh": "电吉他"
+  },
+  {
+    "class_id": 6,
+    "label_id": "/m/0342h",
+    "en": "Guitar",
+    "zh": "吉他"
+  },
+  {
+    "class_id": 7,
+    "label_id": "/m/042v_gx",
+    "en": "Acoustic guitar",
+    "zh": "原声吉他"
+  },
+  {
+    "class_id": 8,
+    "label_id": "/m/04szw",
+    "en": "Musical instrument",
+    "zh": "乐器"
+  },
+  {
+    "class_id": 9,
+    "label_id": "/m/0b_fwt",
+    "en": "Electronic tuner",
+    "zh": "电子调音器"
+  },
+  {
+    "class_id": 10,
+    "label_id": "/m/0fx80y",
+    "en": "Plucked string instrument",
+    "zh": "弹拨弦乐器"
+  },
+  {
+    "class_id": 11,
+    "label_id": "/m/07rqsjt",
+    "en": "Whoosh, swoosh, swish",
+    "zh": "呼啸声"
+  },
+  {
+    "class_id": 12,
+    "label_id": "/m/018vs",
+    "en": "Bass guitar",
+    "zh": "低音吉他"
+  },
+  {
+    "class_id": 13,
+    "label_id": "/m/07szfh9",
+    "en": "Cacophony",
+    "zh": "噪音"
+  },
+  {
+    "class_id": 14,
+    "label_id": "/t/dd00128",
+    "en": "Outside, urban or manmade",
+    "zh": "户外/人造"
+  },
+  {
+    "class_id": 15,
+    "label_id": "/m/02fsn",
+    "en": "Double bass",
+    "zh": "大提琴"
+  },
+  {
+    "class_id": 16,
+    "label_id": "/m/0d8_n",
+    "en": "Pizzicato",
+    "zh": "拨奏"
+  },
+  {
+    "class_id": 17,
+    "label_id": "/m/0l14_3",
+    "en": "Bowed string instrument",
+    "zh": "拉弦乐器"
+  },
+  {
+    "class_id": 18,
+    "label_id": "/m/07q4ntr",
+    "en": "Bellow",
+    "zh": "呼啸声"
+  },
+  {
+    "class_id": 19,
+    "label_id": "/m/07rwj3x",
+    "en": "Whoop",
+    "zh": "呼喊"
+  },
+  {
+    "class_id": 20,
+    "label_id": "/m/09x0r",
+    "en": "Speech",
+    "zh": "说话"
+  },
+  {
+    "class_id": 21,
+    "label_id": "/m/01s0vc",
+    "en": "Zipper (clothing)",
+    "zh": "拉链（衣物）"
+  },
+  {
+    "class_id": 22,
+    "label_id": "/m/025wky1",
+    "en": "Air conditioning",
+    "zh": "空调"
+  },
+  {
+    "class_id": 23,
+    "label_id": "/m/07ryjzk",
+    "en": "Slap, smack",
+    "zh": "拍打/拍打声"
+  },
+  {
+    "class_id": 24,
+    "label_id": "/m/07xzm",
+    "en": "Ukulele",
+    "zh": "夏威夷吉他"
+  },
+  {
+    "class_id": 25,
+    "label_id": "/m/01qbl",
+    "en": "Cymbal",
+    "zh": "钹"
+  },
+  {
+    "class_id": 26,
+    "label_id": "/m/026t6",
+    "en": "Drum",
+    "zh": "鼓"
+  },
+  {
+    "class_id": 27,
+    "label_id": "/m/0283d",
+    "en": "Drum and bass",
+    "zh": "鼓和贝斯"
+  },
+  {
+    "class_id": 28,
+    "label_id": "/m/02hnl",
+    "en": "Drum kit",
+    "zh": "鼓组"
+  },
+  {
+    "class_id": 29,
+    "label_id": "/m/02lkt",
+    "en": "Electronic music",
+    "zh": "电子音乐"
+  },
+  {
+    "class_id": 30,
+    "label_id": "/m/03qtq",
+    "en": "Hi-hat",
+    "zh": "踩镲"
+  },
+  {
+    "class_id": 31,
+    "label_id": "/m/06rvn",
+    "en": "Snare drum",
+    "zh": "军鼓"
+  },
+  {
+    "class_id": 32,
+    "label_id": "/m/0bm02",
+    "en": "Bass drum",
+    "zh": "低音鼓"
+  },
+  {
+    "class_id": 33,
+    "label_id": "/m/0l14md",
+    "en": "Percussion",
+    "zh": "打击乐"
+  },
+  {
+    "class_id": 34,
+    "label_id": "/m/03qc9zr",
+    "en": "Screaming",
+    "zh": "尖叫"
+  },
+  {
+    "class_id": 35,
+    "label_id": "/g/122z_qxw",
+    "en": "Firecracker",
+    "zh": "鞭炮"
+  },
+  {
+    "class_id": 36,
+    "label_id": "/m/019jd",
+    "en": "Boat, Water vehicle",
+    "zh": "船/船只, 水上交通工具"
+  },
+  {
+    "class_id": 37,
+    "label_id": "/m/02rlv9",
+    "en": "Motorboat, speedboat",
+    "zh": "摩托艇, 速度艇"
+  },
+  {
+    "class_id": 38,
+    "label_id": "/m/07qcpgn",
+    "en": "Tap",
+    "zh": "敲击声"
+  },
+  {
+    "class_id": 39,
+    "label_id": "/m/011k_j",
+    "en": "Timpani",
+    "zh": "定音鼓"
+  },
+  {
+    "class_id": 40,
+    "label_id": "/m/0239kh",
+    "en": "Cowbell",
+    "zh": "牛铃"
+  },
+  {
+    "class_id": 41,
+    "label_id": "/m/03t3fj",
+    "en": "Rimshot",
+    "zh": "边鼓敲击"
+  },
+  {
+    "class_id": 42,
+    "label_id": "/m/07r_80w",
+    "en": "Hoot",
+    "zh": "呼喊声"
+  },
+  {
+    "class_id": 43,
+    "label_id": "/m/09d5_",
+    "en": "Owl",
+    "zh": "猫头鹰"
+  },
+  {
+    "class_id": 44,
+    "label_id": "/m/01g50p",
+    "en": "Railroad car, train wagon",
+    "zh": "火车车厢"
+  },
+  {
+    "class_id": 45,
+    "label_id": "/m/04zmvq",
+    "en": "Train whistle",
+    "zh": "火车汽笛"
+  },
+  {
+    "class_id": 46,
+    "label_id": "/m/06d_3",
+    "en": "Rail transport",
+    "zh": "铁路运输"
+  },
+  {
+    "class_id": 47,
+    "label_id": "/m/07jdr",
+    "en": "Train",
+    "zh": "火车"
+  },
+  {
+    "class_id": 48,
+    "label_id": "/m/07pt_g0",
+    "en": "Pulse",
+    "zh": "脉冲"
+  },
+  {
+    "class_id": 49,
+    "label_id": "/m/015lz1",
+    "en": "Singing",
+    "zh": "歌声"
+  },
+  {
+    "class_id": 50,
+    "label_id": "/m/07sr1lc",
+    "en": "Yell",
+    "zh": "喊声"
+  },
+  {
+    "class_id": 51,
+    "label_id": "/t/dd00126",
+    "en": "Inside, large room or hall",
+    "zh": "室内/大厅"
+  },
+  {
+    "class_id": 52,
+    "label_id": "/m/07rrlb6",
+    "en": "Splash, splatter",
+    "zh": "溅水声"
+  },
+  {
+    "class_id": 53,
+    "label_id": "/m/0fx9l",
+    "en": "Microwave oven",
+    "zh": "微波炉"
+  },
+  {
+    "class_id": 54,
+    "label_id": "/m/07qmpdm",
+    "en": "Clatter",
+    "zh": "叮当声"
+  },
+  {
+    "class_id": 55,
+    "label_id": "/t/dd00121",
+    "en": "Boing",
+    "zh": "砰声"
+  },
+  {
+    "class_id": 56,
+    "label_id": "/m/01yg9g",
+    "en": "Lawn mower",
+    "zh": "割草机"
+  },
+  {
+    "class_id": 57,
+    "label_id": "/m/07qlf79",
+    "en": "Spray",
+    "zh": "喷洒声"
+  },
+  {
+    "class_id": 58,
+    "label_id": "/m/01jnbd",
+    "en": "Echo",
+    "zh": "回声"
+  },
+  {
+    "class_id": 59,
+    "label_id": "/m/03fwl",
+    "en": "Goat",
+    "zh": "山羊"
+  },
+  {
+    "class_id": 60,
+    "label_id": "/m/0ch8v",
+    "en": "Livestock, farm animals, working animals",
+    "zh": "牲畜/农场动物/工作动物"
+  },
+  {
+    "class_id": 61,
+    "label_id": "/m/0jbk",
+    "en": "Animal",
+    "zh": "动物"
+  },
+  {
+    "class_id": 62,
+    "label_id": "/m/07plz5l",
+    "en": "Sigh",
+    "zh": "叹气"
+  },
+  {
+    "class_id": 63,
+    "label_id": "/t/dd00036",
+    "en": "Angry music",
+    "zh": "愤怒的音乐"
+  },
+  {
+    "class_id": 64,
+    "label_id": "/t/dd00003",
+    "en": "Male singing",
+    "zh": "男声歌唱"
+  },
+  {
+    "class_id": 65,
+    "label_id": "/m/07lnk",
+    "en": "Trance music",
+    "zh": "迷幻音乐"
+  },
+  {
+    "class_id": 66,
+    "label_id": "/m/02fs_r",
+    "en": "Beep, bleep",
+    "zh": "哔声/滴答声"
+  },
+  {
+    "class_id": 67,
+    "label_id": "/m/02cz_7",
+    "en": "Beatboxing",
+    "zh": "口技节拍"
+  },
+  {
+    "class_id": 68,
+    "label_id": "/m/02dgv",
+    "en": "Door",
+    "zh": "门"
+  },
+  {
+    "class_id": 69,
+    "label_id": "/m/02y_763",
+    "en": "Sliding door",
+    "zh": "滑动门"
+  },
+  {
+    "class_id": 70,
+    "label_id": "/m/015y_n",
+    "en": "Swing music",
+    "zh": "摇摆音乐"
+  },
+  {
+    "class_id": 71,
+    "label_id": "/m/04fgwm",
+    "en": "Electric toothbrush",
+    "zh": "电动牙刷"
+  },
+  {
+    "class_id": 72,
+    "label_id": "/m/030rvx",
+    "en": "Buzzer",
+    "zh": "蜂鸣声"
+  },
+  {
+    "class_id": 73,
+    "label_id": "/t/dd00129",
+    "en": "Outside, rural or natural",
+    "zh": "户外/农村或自然环境"
+  },
+  {
+    "class_id": 74,
+    "label_id": "/m/014zdl",
+    "en": "Explosion",
+    "zh": "爆炸"
+  },
+  {
+    "class_id": 75,
+    "label_id": "/m/07pxg6y",
+    "en": "Eruption",
+    "zh": "爆发/喷发"
+  },
+  {
+    "class_id": 76,
+    "label_id": "/m/07qsvvw",
+    "en": "Burst, pop",
+    "zh": "爆裂/啪的一声"
+  },
+  {
+    "class_id": 77,
+    "label_id": "/m/04fq5q",
+    "en": "Foghorn",
+    "zh": "雾号"
+  },
+  {
+    "class_id": 78,
+    "label_id": "/m/07rjzl8",
+    "en": "Slam",
+    "zh": "撞击"
+  },
+  {
+    "class_id": 79,
+    "label_id": "/m/032s66",
+    "en": "Gunshot, gunfire",
+    "zh": "枪声/枪响"
+  },
+  {
+    "class_id": 80,
+    "label_id": "/m/0_1c",
+    "en": "Artillery fire",
+    "zh": "炮火"
+  },
+  {
+    "class_id": 81,
+    "label_id": "/m/07qz6j3",
+    "en": "Whimper",
+    "zh": "呜咽"
+  },
+  {
+    "class_id": 82,
+    "label_id": "/m/07yv9",
+    "en": "Vehicle",
+    "zh": "车辆"
+  },
+  {
+    "class_id": 83,
+    "label_id": "/m/0gvgw0",
+    "en": "Air brake",
+    "zh": "刹车"
+  },
+  {
+    "class_id": 84,
+    "label_id": "/m/02_41",
+    "en": "Fire",
+    "zh": "火灾"
+  },
+  {
+    "class_id": 85,
+    "label_id": "/m/07p6mqd",
+    "en": "Slosh",
+    "zh": "晃动"
+  },
+  {
+    "class_id": 86,
+    "label_id": "/m/01jg02",
+    "en": "Heart sounds, heartbeat",
+    "zh": "心音/心跳"
+  },
+  {
+    "class_id": 87,
+    "label_id": "/m/07p_0gm",
+    "en": "Throbbing",
+    "zh": "脉动"
+  },
+  {
+    "class_id": 88,
+    "label_id": "/m/07pzfmf",
+    "en": "Crackle",
+    "zh": "爆裂声"
+  },
+  {
+    "class_id": 89,
+    "label_id": "/t/dd00067",
+    "en": "Heavy engine (low frequency)",
+    "zh": "低频发动机声"
+  },
+  {
+    "class_id": 90,
+    "label_id": "/m/025_jnm",
+    "en": "Finger snapping",
+    "zh": "拍手声"
+  },
+  {
+    "class_id": 91,
+    "label_id": "/m/01bjv",
+    "en": "Bus",
+    "zh": "公交车"
+  },
+  {
+    "class_id": 92,
+    "label_id": "/m/0912c9",
+    "en": "Vehicle horn, car horn, honking",
+    "zh": "车辆喇叭"
+  },
+  {
+    "class_id": 93,
+    "label_id": "/m/04229",
+    "en": "Jet engine",
+    "zh": "喷气发动机"
+  },
+  {
+    "class_id": 94,
+    "label_id": "/m/07rkbfh",
+    "en": "Chatter",
+    "zh": "闲聊"
+  },
+  {
+    "class_id": 95,
+    "label_id": "/m/0dls3",
+    "en": "Grunge",
+    "zh": "嘶哑声"
+  },
+  {
+    "class_id": 96,
+    "label_id": "/m/073cg4",
+    "en": "Cap gun",
+    "zh": "响声枪"
+  },
+  {
+    "class_id": 97,
+    "label_id": "/m/07rv4dm",
+    "en": "Clang",
+    "zh": "金属碰撞声"
+  },
+  {
+    "class_id": 98,
+    "label_id": "/m/04_sv",
+    "en": "Motorcycle",
+    "zh": "摩托车"
+  },
+  {
+    "class_id": 99,
+    "label_id": "/m/07hvw1",
+    "en": "Field recording",
+    "zh": "现场录音"
+  },
+  {
+    "class_id": 100,
+    "label_id": "/m/01hgjl",
+    "en": "Scratching (performance technique)",
+    "zh": "刮擦（表演技巧）"
+  },
+  {
+    "class_id": 101,
+    "label_id": "/m/01v1d8",
+    "en": "Sampler",
+    "zh": "采样器"
+  },
+  {
+    "class_id": 102,
+    "label_id": "/m/0cfdd",
+    "en": "Drum machine",
+    "zh": "鼓机"
+  },
+  {
+    "class_id": 103,
+    "label_id": "/m/0130jx",
+    "en": "Sink (filling or washing)",
+    "zh": "水槽（注水或清洗）"
+  },
+  {
+    "class_id": 104,
+    "label_id": "/m/02jz0l",
+    "en": "Water tap, faucet",
+    "zh": "水龙头"
+  },
+  {
+    "class_id": 105,
+    "label_id": "/m/0838f",
+    "en": "Water",
+    "zh": "水"
+  },
+  {
+    "class_id": 106,
+    "label_id": "/m/01m2v",
+    "en": "Computer keyboard",
+    "zh": "电脑键盘"
+  },
+  {
+    "class_id": 107,
+    "label_id": "/m/06bz3",
+    "en": "Radio",
+    "zh": "收音机"
+  },
+  {
+    "class_id": 108,
+    "label_id": "/m/03lty",
+    "en": "Heavy metal",
+    "zh": "重金属"
+  },
+  {
+    "class_id": 109,
+    "label_id": "/m/0dl5d",
+    "en": "Progressive rock",
+    "zh": "前卫摇滚"
+  },
+  {
+    "class_id": 110,
+    "label_id": "/m/02c8p",
+    "en": "Telephone dialing, DTMF",
+    "zh": "电话拨号,DTMF"
+  },
+  {
+    "class_id": 111,
+    "label_id": "/m/07pjjrj",
+    "en": "Smash, crash",
+    "zh": "撞击声"
+  },
+  {
+    "class_id": 112,
+    "label_id": "/t/dd00032",
+    "en": "Funny music",
+    "zh": "搞笑音乐"
+  },
+  {
+    "class_id": 113,
+    "label_id": "/m/07q2z82",
+    "en": "Accelerating, revving, vroom",
+    "zh": "加速,轰鸣,vrooom"
+  },
+  {
+    "class_id": 114,
+    "label_id": "/m/07rknqz",
+    "en": "Skidding",
+    "zh": "打滑"
+  },
+  {
+    "class_id": 115,
+    "label_id": "/m/0h9mv",
+    "en": "Tire squeal",
+    "zh": "轮胎尖叫"
+  },
+  {
+    "class_id": 116,
+    "label_id": "/m/0ltv",
+    "en": "Race car, auto racing",
+    "zh": "赛车,汽车比赛"
+  },
+  {
+    "class_id": 117,
+    "label_id": "/m/05rwpb",
+    "en": "Independent music",
+    "zh": "独立音乐"
+  },
+  {
+    "class_id": 118,
+    "label_id": "/m/04k94",
+    "en": "Liquid",
+    "zh": "液体"
+  },
+  {
+    "class_id": 119,
+    "label_id": "/m/05zc1",
+    "en": "Pulleys",
+    "zh": "滑轮"
+  },
+  {
+    "class_id": 120,
+    "label_id": "/t/dd00077",
+    "en": "Mechanisms",
+    "zh": "机械声"
+  },
+  {
+    "class_id": 121,
+    "label_id": "/m/01p970",
+    "en": "Tabla",
+    "zh": "塔布拉鼓"
+  },
+  {
+    "class_id": 122,
+    "label_id": "/m/03q5_w",
+    "en": "Burping, eructation",
+    "zh": "打嗝"
+  },
+  {
+    "class_id": 123,
+    "label_id": "/t/dd00127",
+    "en": "Inside, public space",
+    "zh": "室内/公共空间"
+  },
+  {
+    "class_id": 124,
+    "label_id": "/m/0j6m2",
+    "en": "Stream",
+    "zh": "水流"
+  },
+  {
+    "class_id": 125,
+    "label_id": "/m/01lsmm",
+    "en": "Scissors",
+    "zh": "剪刀"
+  },
+  {
+    "class_id": 126,
+    "label_id": "/m/09ct_",
+    "en": "Helicopter",
+    "zh": "直升机"
+  },
+  {
+    "class_id": 127,
+    "label_id": "/t/dd00092",
+    "en": "Wind noise (microphone)",
+    "zh": "风声（麦克风）"
+  },
+  {
+    "class_id": 128,
+    "label_id": "/m/081rb",
+    "en": "Writing",
+    "zh": "书写"
+  },
+  {
+    "class_id": 129,
+    "label_id": "/m/07prgkl",
+    "en": "Pour",
+    "zh": "倒水"
+  },
+  {
+    "class_id": 130,
+    "label_id": "/m/07s34ls",
+    "en": "Whir",
+    "zh": "嗡嗡声"
+  },
+  {
+    "class_id": 131,
+    "label_id": "/m/0k4j",
+    "en": "Car",
+    "zh": "汽车"
+  },
+  {
+    "class_id": 132,
+    "label_id": "/t/dd00066",
+    "en": "Medium engine (mid frequency)",
+    "zh": "中频引擎"
+  },
+  {
+    "class_id": 133,
+    "label_id": "/m/0dv3j",
+    "en": "Boiling",
+    "zh": "沸腾"
+  },
+  {
+    "class_id": 134,
+    "label_id": "/m/02_nn",
+    "en": "Fart",
+    "zh": "放屁"
+  },
+  {
+    "class_id": 135,
+    "label_id": "/m/07rbp7_",
+    "en": "Whip",
+    "zh": "鞭声"
+  },
+  {
+    "class_id": 136,
+    "label_id": "/m/0z9c",
+    "en": "A capella",
+    "zh": "人声独唱"
+  },
+  {
+    "class_id": 137,
+    "label_id": "/m/02mk9",
+    "en": "Engine",
+    "zh": "引擎"
+  },
+  {
+    "class_id": 138,
+    "label_id": "/t/dd00130",
+    "en": "Engine starting",
+    "zh": "引擎启动"
+  },
+  {
+    "class_id": 139,
+    "label_id": "/m/020bb7",
+    "en": "Bird vocalization, bird call, bird song",
+    "zh": "鸟鸣"
+  },
+  {
+    "class_id": 140,
+    "label_id": "/m/06_y0by",
+    "en": "Environmental noise",
+    "zh": "环境噪声"
+  },
+  {
+    "class_id": 141,
+    "label_id": "/m/0dl9sf8",
+    "en": "Throat clearing",
+    "zh": "清喉咙"
+  },
+  {
+    "class_id": 142,
+    "label_id": "/m/03vt0",
+    "en": "Insect",
+    "zh": "昆虫"
+  },
+  {
+    "class_id": 143,
+    "label_id": "/m/09xqv",
+    "en": "Cricket",
+    "zh": "蟋蟀"
+  },
+  {
+    "class_id": 144,
+    "label_id": "/m/07cx4",
+    "en": "Telephone",
+    "zh": "电话"
+  },
+  {
+    "class_id": 145,
+    "label_id": "/m/07pp8cl",
+    "en": "Telephone bell ringing",
+    "zh": "电话铃声"
+  },
+  {
+    "class_id": 146,
+    "label_id": "/m/07qwyj0",
+    "en": "Rustle",
+    "zh": "沙沙声"
+  },
+  {
+    "class_id": 147,
+    "label_id": "/m/0c1dj",
+    "en": "Sound effect",
+    "zh": "声音效果"
+  },
+  {
+    "class_id": 148,
+    "label_id": "/m/068hy",
+    "en": "Domestic animals, pets",
+    "zh": "家养动物/宠物"
+  },
+  {
+    "class_id": 149,
+    "label_id": "/m/0bt9lr",
+    "en": "Dog",
+    "zh": "狗"
+  },
+  {
+    "class_id": 150,
+    "label_id": "/t/dd00136",
+    "en": "Whimper (dog)",
+    "zh": "小狗哀鸣"
+  },
+  {
+    "class_id": 151,
+    "label_id": "/m/0brhx",
+    "en": "Speech synthesizer",
+    "zh": "语音合成"
+  },
+  {
+    "class_id": 152,
+    "label_id": "/m/06by7",
+    "en": "Rock music",
+    "zh": "摇滚音乐"
+  },
+  {
+    "class_id": 153,
+    "label_id": "/m/07st88b",
+    "en": "Croak",
+    "zh": "呱呱声"
+  },
+  {
+    "class_id": 154,
+    "label_id": "/m/09ld4",
+    "en": "Frog",
+    "zh": "青蛙"
+  },
+  {
+    "class_id": 155,
+    "label_id": "/m/07s04w4",
+    "en": "Snicker",
+    "zh": "嗤笑"
+  },
+  {
+    "class_id": 156,
+    "label_id": "/m/01b_21",
+    "en": "Cough",
+    "zh": "咳嗽"
+  },
+  {
+    "class_id": 157,
+    "label_id": "/m/01z5f",
+    "en": "Canidae, dogs, wolves",
+    "zh": "犬科/狗/狼"
+  },
+  {
+    "class_id": 158,
+    "label_id": "/m/07pyy8b",
+    "en": "Pant",
+    "zh": "喘息"
+  },
+  {
+    "class_id": 159,
+    "label_id": "/m/026z9",
+    "en": "Disco",
+    "zh": "迪斯科"
+  },
+  {
+    "class_id": 160,
+    "label_id": "/m/0ggx5q",
+    "en": "Dance music",
+    "zh": "舞曲"
+  },
+  {
+    "class_id": 161,
+    "label_id": "/m/07gxw",
+    "en": "Techno",
+    "zh": "Techno电子舞曲"
+  },
+  {
+    "class_id": 162,
+    "label_id": "/m/025rv6n",
+    "en": "Fowl",
+    "zh": "鸟类"
+  },
+  {
+    "class_id": 163,
+    "label_id": "/m/07st89h",
+    "en": "Cluck",
+    "zh": "咯咯声"
+  },
+  {
+    "class_id": 164,
+    "label_id": "/m/09b5t",
+    "en": "Chicken, rooster",
+    "zh": "鸡/公鸡"
+  },
+  {
+    "class_id": 165,
+    "label_id": "/m/0mbct",
+    "en": "Gong",
+    "zh": "钟声"
+  },
+  {
+    "class_id": 166,
+    "label_id": "/m/0xzly",
+    "en": "Maraca",
+    "zh": "马拉开巴"
+  },
+  {
+    "class_id": 167,
+    "label_id": "/m/07qs1cx",
+    "en": "Crack",
+    "zh": "破裂声"
+  },
+  {
+    "class_id": 168,
+    "label_id": "/m/07pc8lb",
+    "en": "Breaking",
+    "zh": "破裂声"
+  },
+  {
+    "class_id": 169,
+    "label_id": "/m/01z47d",
+    "en": "Busy signal",
+    "zh": "忙音"
+  },
+  {
+    "class_id": 170,
+    "label_id": "/m/07q0yl5",
+    "en": "Snort",
+    "zh": "打嗝"
+  },
+  {
+    "class_id": 171,
+    "label_id": "/m/015p6",
+    "en": "Bird",
+    "zh": "鸟"
+  },
+  {
+    "class_id": 172,
+    "label_id": "/m/07pggtn",
+    "en": "Chirp, tweet",
+    "zh": "鸣叫"
+  },
+  {
+    "class_id": 173,
+    "label_id": "/m/07r4wb8",
+    "en": "Knock",
+    "zh": "敲击"
+  },
+  {
+    "class_id": 174,
+    "label_id": "/m/013y1f",
+    "en": "Organ",
+    "zh": "风琴"
+  },
+  {
+    "class_id": 175,
+    "label_id": "/m/03xq_f",
+    "en": "Electronic organ",
+    "zh": "电子风琴"
+  },
+  {
+    "class_id": 176,
+    "label_id": "/m/03qjg",
+    "en": "Harmonica",
+    "zh": "口琴"
+  },
+  {
+    "class_id": 177,
+    "label_id": "/m/085jw",
+    "en": "Wind instrument, woodwind instrument",
+    "zh": "管乐器"
+  },
+  {
+    "class_id": 178,
+    "label_id": "/m/012ndj",
+    "en": "Fire engine, fire truck (siren)",
+    "zh": "消防车（警报）"
+  },
+  {
+    "class_id": 179,
+    "label_id": "/m/03j1ly",
+    "en": "Emergency vehicle",
+    "zh": "应急车辆"
+  },
+  {
+    "class_id": 180,
+    "label_id": "/m/03kmc9",
+    "en": "Siren",
+    "zh": "警报声"
+  },
+  {
+    "class_id": 181,
+    "label_id": "/t/dd00018",
+    "en": "Oink",
+    "zh": "哼哼声"
+  },
+  {
+    "class_id": 182,
+    "label_id": "/m/04zjc",
+    "en": "Machine gun",
+    "zh": "机枪声"
+  },
+  {
+    "class_id": 183,
+    "label_id": "/m/01xqw",
+    "en": "Cello",
+    "zh": "大提琴"
+  },
+  {
+    "class_id": 184,
+    "label_id": "/m/07y_7",
+    "en": "Violin, fiddle",
+    "zh": "小提琴"
+  },
+  {
+    "class_id": 185,
+    "label_id": "/m/07pbtc8",
+    "en": "Walk, footsteps",
+    "zh": "脚步声"
+  },
+  {
+    "class_id": 186,
+    "label_id": "/m/07rv9rh",
+    "en": "Clip-clop",
+    "zh": "哒哒声"
+  },
+  {
+    "class_id": 187,
+    "label_id": "/m/07rrh0c",
+    "en": "Thunk",
+    "zh": "咚声"
+  },
+  {
+    "class_id": 188,
+    "label_id": "/m/01jt3m",
+    "en": "Toilet flush",
+    "zh": "冲水声"
+  },
+  {
+    "class_id": 189,
+    "label_id": "/m/0284vy3",
+    "en": "Train horn",
+    "zh": "火车汽笛"
+  },
+  {
+    "class_id": 190,
+    "label_id": "/m/07rwm0c",
+    "en": "Clickety-clack",
+    "zh": "咔哒声"
+  },
+  {
+    "class_id": 191,
+    "label_id": "/t/dd00004",
+    "en": "Female singing",
+    "zh": "女声歌唱"
+  },
+  {
+    "class_id": 192,
+    "label_id": "/m/03m9d0z",
+    "en": "Wind",
+    "zh": "风"
+  },
+  {
+    "class_id": 193,
+    "label_id": "/m/05kq4",
+    "en": "Ocean",
+    "zh": "海洋"
+  },
+  {
+    "class_id": 194,
+    "label_id": "/m/0hsrw",
+    "en": "Sailboat, sailing ship",
+    "zh": "帆船/航行船只"
+  },
+  {
+    "class_id": 195,
+    "label_id": "/m/01kcd",
+    "en": "Brass instrument",
+    "zh": "铜管乐器"
+  },
+  {
+    "class_id": 196,
+    "label_id": "/m/06ncr",
+    "en": "Saxophone",
+    "zh": "萨克斯"
+  },
+  {
+    "class_id": 197,
+    "label_id": "/m/07c6l",
+    "en": "Trombone",
+    "zh": "圆号"
+  },
+  {
+    "class_id": 198,
+    "label_id": "/m/03qtwd",
+    "en": "Crowd",
+    "zh": "人群"
+  },
+  {
+    "class_id": 199,
+    "label_id": "/m/07qfr4h",
+    "en": "Hubbub, speech noise, speech babble",
+    "zh": "嘈杂声/人声"
+  },
+  {
+    "class_id": 200,
+    "label_id": "/m/07pl1bw",
+    "en": "Splinter",
+    "zh": "木块"
+  },
+  {
+    "class_id": 201,
+    "label_id": "/m/083vt",
+    "en": "Wood",
+    "zh": "木头"
+  },
+  {
+    "class_id": 202,
+    "label_id": "/m/01glhc",
+    "en": "Tapping (guitar technique)",
+    "zh": "弹拨（吉他技巧）"
+  },
+  {
+    "class_id": 203,
+    "label_id": "/t/dd00033",
+    "en": "Sad music",
+    "zh": "悲伤的音乐"
+  },
+  {
+    "class_id": 204,
+    "label_id": "/m/02rr_",
+    "en": "Effects unit",
+    "zh": "效果单元"
+  },
+  {
+    "class_id": 205,
+    "label_id": "/m/07m2kt",
+    "en": "Chorus effect",
+    "zh": "合唱效果"
+  },
+  {
+    "class_id": 206,
+    "label_id": "/m/012f08",
+    "en": "Motor vehicle (road)",
+    "zh": "机动车（道路）"
+  },
+  {
+    "class_id": 207,
+    "label_id": "/m/02x984l",
+    "en": "Mechanical fan",
+    "zh": "机械风扇"
+  },
+  {
+    "class_id": 208,
+    "label_id": "/m/096m7z",
+    "en": "Noise",
+    "zh": "噪音"
+  },
+  {
+    "class_id": 209,
+    "label_id": "/m/07pczhz",
+    "en": "Chop",
+    "zh": "砍切声"
+  },
+  {
+    "class_id": 210,
+    "label_id": "/m/07rn7sz",
+    "en": "Shatter",
+    "zh": "破碎声"
+  },
+  {
+    "class_id": 211,
+    "label_id": "/m/07s72n",
+    "en": "Dubstep",
+    "zh": "低音跳动"
+  },
+  {
+    "class_id": 212,
+    "label_id": "/m/09t49",
+    "en": "Rustling leaves",
+    "zh": "沙沙声"
+  },
+  {
+    "class_id": 213,
+    "label_id": "/m/01hsr_",
+    "en": "Sneeze",
+    "zh": "打喷嚏"
+  },
+  {
+    "class_id": 214,
+    "label_id": "/m/02cjck",
+    "en": "Theme music",
+    "zh": "主题音乐"
+  },
+  {
+    "class_id": 215,
+    "label_id": "/m/0llzx",
+    "en": "Sewing machine",
+    "zh": "缝纫机"
+  },
+  {
+    "class_id": 216,
+    "label_id": "/m/04s8yn",
+    "en": "Crow",
+    "zh": "乌鸦"
+  },
+  {
+    "class_id": 217,
+    "label_id": "/m/07r5c2p",
+    "en": "Caw",
+    "zh": "呱呱声"
+  },
+  {
+    "class_id": 218,
+    "label_id": "/m/0dwsp",
+    "en": "Marimba, xylophone",
+    "zh": "钢片琴/木琴"
+  },
+  {
+    "class_id": 219,
+    "label_id": "/m/0dwtp",
+    "en": "Glockenspiel",
+    "zh": "碰铃"
+  },
+  {
+    "class_id": 220,
+    "label_id": "/m/0j45pbj",
+    "en": "Mallet percussion",
+    "zh": "棒击乐器"
+  },
+  {
+    "class_id": 221,
+    "label_id": "/m/02yds9",
+    "en": "Purr",
+    "zh": "咕噜声"
+  },
+  {
+    "class_id": 222,
+    "label_id": "/m/01xq0k1",
+    "en": "Cattle, bovinae",
+    "zh": "牛"
+  },
+  {
+    "class_id": 223,
+    "label_id": "/m/07rpkh9",
+    "en": "Moo",
+    "zh": "哞哞声"
+  },
+  {
+    "class_id": 224,
+    "label_id": "/m/06rqw",
+    "en": "Ska",
+    "zh": "萨卡"
+  },
+  {
+    "class_id": 225,
+    "label_id": "/m/014yck",
+    "en": "Aircraft engine",
+    "zh": "飞机发动机"
+  },
+  {
+    "class_id": 226,
+    "label_id": "/m/0cmf2",
+    "en": "Fixed-wing aircraft, airplane",
+    "zh": "固定翼飞机/飞机"
+  },
+  {
+    "class_id": 227,
+    "label_id": "/m/0k5j",
+    "en": "Aircraft",
+    "zh": "飞机"
+  },
+  {
+    "class_id": 228,
+    "label_id": "/m/01m4t",
+    "en": "Printer",
+    "zh": "打印机"
+  },
+  {
+    "class_id": 229,
+    "label_id": "/m/0319l",
+    "en": "French horn",
+    "zh": "法国号"
+  },
+  {
+    "class_id": 230,
+    "label_id": "/m/05pd6",
+    "en": "Orchestra",
+    "zh": "管弦乐队"
+  },
+  {
+    "class_id": 231,
+    "label_id": "/m/02mscn",
+    "en": "Christian music",
+    "zh": "基督教音乐"
+  },
+  {
+    "class_id": 232,
+    "label_id": "/m/0l14qv",
+    "en": "Synthesizer",
+    "zh": "合成器"
+  },
+  {
+    "class_id": 233,
+    "label_id": "/m/05w3f",
+    "en": "Psychedelic rock",
+    "zh": "迷幻摇滚"
+  },
+  {
+    "class_id": 234,
+    "label_id": "/m/01jg1z",
+    "en": "Heart murmur",
+    "zh": "心音异常"
+  },
+  {
+    "class_id": 235,
+    "label_id": "/m/028v0c",
+    "en": "Silence",
+    "zh": "寂静"
+  },
+  {
+    "class_id": 236,
+    "label_id": "/m/07qn4z3",
+    "en": "Rattle",
+    "zh": "摇铃声"
+  },
+  {
+    "class_id": 237,
+    "label_id": "/m/07rgkc5",
+    "en": "Static",
+    "zh": "噪音/静电"
+  },
+  {
+    "class_id": 238,
+    "label_id": "/m/03r5q_",
+    "en": "Jingle (music)",
+    "zh": "铃声"
+  },
+  {
+    "class_id": 239,
+    "label_id": "/m/07phhsh",
+    "en": "Rumble",
+    "zh": "震动声"
+  },
+  {
+    "class_id": 240,
+    "label_id": "/m/0145m",
+    "en": "Afrobeat",
+    "zh": "非洲贝特"
+  },
+  {
+    "class_id": 241,
+    "label_id": "/m/0164x2",
+    "en": "Music of Africa",
+    "zh": "非洲音乐"
+  },
+  {
+    "class_id": 242,
+    "label_id": "/m/07rgt08",
+    "en": "Chuckle, chortle",
+    "zh": "咯咯笑"
+  },
+  {
+    "class_id": 243,
+    "label_id": "/m/07qqyl4",
+    "en": "Boom",
+    "zh": "砰声"
+  },
+  {
+    "class_id": 244,
+    "label_id": "/m/07r660_",
+    "en": "Giggle",
+    "zh": "咯咯笑"
+  },
+  {
+    "class_id": 245,
+    "label_id": "/m/07sq110",
+    "en": "Belly laugh",
+    "zh": "大笑"
+  },
+  {
+    "class_id": 246,
+    "label_id": "/m/07swgks",
+    "en": "Gurgling",
+    "zh": "咕噜声"
+  },
+  {
+    "class_id": 247,
+    "label_id": "/m/0155w",
+    "en": "Blues",
+    "zh": "蓝调"
+  },
+  {
+    "class_id": 248,
+    "label_id": "/m/06j6l",
+    "en": "Rhythm and blues",
+    "zh": "节奏布鲁斯"
+  },
+  {
+    "class_id": 249,
+    "label_id": "/m/03p19w",
+    "en": "Jackhammer",
+    "zh": "锤击声"
+  },
+  {
+    "class_id": 250,
+    "label_id": "/m/07pkxdp",
+    "en": "Lullaby",
+    "zh": "摇篮曲"
+  },
+  {
+    "class_id": 251,
+    "label_id": "/m/04rmv",
+    "en": "Mouse",
+    "zh": "老鼠"
+  },
+  {
+    "class_id": 252,
+    "label_id": "/m/01h3n",
+    "en": "Bee, wasp, etc.",
+    "zh": "蜜蜂/虫鸣等"
+  },
+  {
+    "class_id": 253,
+    "label_id": "/m/0h2mp",
+    "en": "Fly, housefly",
+    "zh": "苍蝇/家蝇"
+  },
+  {
+    "class_id": 254,
+    "label_id": "/m/03v3yw",
+    "en": "Keys jangling",
+    "zh": "钥匙碰撞"
+  },
+  {
+    "class_id": 255,
+    "label_id": "/m/07r4gkf",
+    "en": "Patter",
+    "zh": "啪嗒声"
+  },
+  {
+    "class_id": 256,
+    "label_id": "/m/07pws3f",
+    "en": "Bang",
+    "zh": "砰声"
+  },
+  {
+    "class_id": 257,
+    "label_id": "/m/04cvmfc",
+    "en": "Roar",
+    "zh": "轰鸣"
+  },
+  {
+    "class_id": 258,
+    "label_id": "/m/0dgbq",
+    "en": "Civil defense siren",
+    "zh": "防空警报"
+  },
+  {
+    "class_id": 259,
+    "label_id": "/m/02pjr4",
+    "en": "Blender",
+    "zh": "搅拌机"
+  },
+  {
+    "class_id": 260,
+    "label_id": "/m/05lls",
+    "en": "Opera",
+    "zh": "歌剧"
+  },
+  {
+    "class_id": 261,
+    "label_id": "/m/0y4f8",
+    "en": "Vocal music",
+    "zh": "人声音乐"
+  },
+  {
+    "class_id": 262,
+    "label_id": "/m/02bm9n",
+    "en": "Ratchet, pawl",
+    "zh": "棘轮/齿"
+  },
+  {
+    "class_id": 263,
+    "label_id": "/m/0l7xg",
+    "en": "Gears",
+    "zh": "齿轮"
+  },
+  {
+    "class_id": 264,
+    "label_id": "/m/07qyrcz",
+    "en": "Plop",
+    "zh": "啪声"
+  },
+  {
+    "class_id": 265,
+    "label_id": "/m/02bk07",
+    "en": "Chant",
+    "zh": "吟唱"
+  },
+  {
+    "class_id": 266,
+    "label_id": "/m/07ptzwd",
+    "en": "Pump (liquid)",
+    "zh": "液体泵动"
+  },
+  {
+    "class_id": 267,
+    "label_id": "/m/07bgp",
+    "en": "Sheep",
+    "zh": "羊"
+  },
+  {
+    "class_id": 268,
+    "label_id": "/m/07q0h5t",
+    "en": "Bleat",
+    "zh": "咩叫"
+  },
+  {
+    "class_id": 269,
+    "label_id": "/m/06xkwv",
+    "en": "Mains hum",
+    "zh": "市电嗡鸣"
+  },
+  {
+    "class_id": 270,
+    "label_id": "/m/07rcgpl",
+    "en": "Hum",
+    "zh": "嗡鸣"
+  },
+  {
+    "class_id": 271,
+    "label_id": "/t/dd00013",
+    "en": "Children playing",
+    "zh": "儿童玩耍"
+  },
+  {
+    "class_id": 272,
+    "label_id": "/m/07gql",
+    "en": "Trumpet",
+    "zh": "喇叭声"
+  },
+  {
+    "class_id": 273,
+    "label_id": "/m/012n7d",
+    "en": "Ambulance (siren)",
+    "zh": "救护车（警报声）"
+  },
+  {
+    "class_id": 274,
+    "label_id": "/m/04qvtq",
+    "en": "Police car (siren)",
+    "zh": "警车（警报声）"
+  },
+  {
+    "class_id": 275,
+    "label_id": "/t/dd00035",
+    "en": "Exciting music",
+    "zh": "激动人心的音乐"
+  },
+  {
+    "class_id": 276,
+    "label_id": "/m/0g6b5",
+    "en": "Fireworks",
+    "zh": "烟花声"
+  },
+  {
+    "class_id": 277,
+    "label_id": "/m/07r81j2",
+    "en": "Caterwaul",
+    "zh": "尖叫声"
+  },
+  {
+    "class_id": 278,
+    "label_id": "/m/07s8j8t",
+    "en": "Roll",
+    "zh": "滚动声"
+  },
+  {
+    "class_id": 279,
+    "label_id": "/m/07sbbz2",
+    "en": "Rock and roll",
+    "zh": "摇滚"
+  },
+  {
+    "class_id": 280,
+    "label_id": "/m/06hck5",
+    "en": "Steam whistle",
+    "zh": "汽笛声"
+  },
+  {
+    "class_id": 281,
+    "label_id": "/m/06wzb",
+    "en": "Steam",
+    "zh": "蒸汽声"
+  },
+  {
+    "class_id": 282,
+    "label_id": "/m/026fgl",
+    "en": "Wind chime",
+    "zh": "风铃声"
+  },
+  {
+    "class_id": 283,
+    "label_id": "/m/0f8s22",
+    "en": "Chime",
+    "zh": "钟声"
+  },
+  {
+    "class_id": 284,
+    "label_id": "/m/0261r1",
+    "en": "Babbling",
+    "zh": "潺潺声"
+  },
+  {
+    "class_id": 285,
+    "label_id": "/m/07mzm6",
+    "en": "Wheeze",
+    "zh": "喘息声"
+  },
+  {
+    "class_id": 286,
+    "label_id": "/m/074ft",
+    "en": "Song",
+    "zh": "歌声"
+  },
+  {
+    "class_id": 287,
+    "label_id": "/m/07q5rw0",
+    "en": "Neigh, whinny",
+    "zh": "嘶鸣声"
+  },
+  {
+    "class_id": 288,
+    "label_id": "/m/04rzd",
+    "en": "Mandolin",
+    "zh": "曼陀林"
+  },
+  {
+    "class_id": 289,
+    "label_id": "/m/0ln16",
+    "en": "Salsa music",
+    "zh": "萨尔萨音乐"
+  },
+  {
+    "class_id": 290,
+    "label_id": "/m/0l14jd",
+    "en": "Choir",
+    "zh": "合唱"
+  },
+  {
+    "class_id": 291,
+    "label_id": "/m/05r6t",
+    "en": "Punk rock",
+    "zh": "朋克摇滚"
+  },
+  {
+    "class_id": 292,
+    "label_id": "/m/02k_mr",
+    "en": "Drum roll",
+    "zh": "鼓点"
+  },
+  {
+    "class_id": 293,
+    "label_id": "/m/05x_td",
+    "en": "Air horn, truck horn",
+    "zh": "汽笛/卡车汽笛"
+  },
+  {
+    "class_id": 294,
+    "label_id": "/m/0fqfqc",
+    "en": "Drawer open or close",
+    "zh": "抽屉开/关"
+  },
+  {
+    "class_id": 295,
+    "label_id": "/m/01z7dr",
+    "en": "Video game music",
+    "zh": "游戏音乐"
+  },
+  {
+    "class_id": 296,
+    "label_id": "/m/0l14gg",
+    "en": "Soundtrack music",
+    "zh": "配乐"
+  },
+  {
+    "class_id": 297,
+    "label_id": "/m/07qv4k0",
+    "en": "Scrape",
+    "zh": "刮擦"
+  },
+  {
+    "class_id": 298,
+    "label_id": "/m/02g901",
+    "en": "Electric shaver, electric razor",
+    "zh": "电动剃须刀"
+  },
+  {
+    "class_id": 299,
+    "label_id": "/m/09ddx",
+    "en": "Duck",
+    "zh": "鸭子"
+  },
+  {
+    "class_id": 300,
+    "label_id": "/m/0dbvp",
+    "en": "Goose",
+    "zh": "鹅叫声"
+  },
+  {
+    "class_id": 301,
+    "label_id": "/m/04gxbd",
+    "en": "Power windows, electric windows",
+    "zh": "电动窗"
+  },
+  {
+    "class_id": 302,
+    "label_id": "/m/07phxs1",
+    "en": "Ding",
+    "zh": "叮声"
+  },
+  {
+    "class_id": 303,
+    "label_id": "/m/02p0sh1",
+    "en": "Traditional music",
+    "zh": "传统音乐"
+  },
+  {
+    "class_id": 304,
+    "label_id": "/m/0mkg",
+    "en": "Accordion",
+    "zh": "手风琴"
+  },
+  {
+    "class_id": 305,
+    "label_id": "/m/0316dw",
+    "en": "Typing",
+    "zh": "打字"
+  },
+  {
+    "class_id": 306,
+    "label_id": "/m/01j4z9",
+    "en": "Chainsaw",
+    "zh": "链锯"
+  },
+  {
+    "class_id": 307,
+    "label_id": "/m/0l14l2",
+    "en": "Shofar",
+    "zh": "号角"
+  },
+  {
+    "class_id": 308,
+    "label_id": "/m/03k3r",
+    "en": "Horse",
+    "zh": "马"
+  },
+  {
+    "class_id": 309,
+    "label_id": "/m/07qwdck",
+    "en": "Ping",
+    "zh": "砰声"
+  },
+  {
+    "class_id": 310,
+    "label_id": "/m/0lyf6",
+    "en": "Breathing",
+    "zh": "呼吸声"
+  },
+  {
+    "class_id": 311,
+    "label_id": "/m/01lyv",
+    "en": "Country",
+    "zh": "乡村音乐"
+  },
+  {
+    "class_id": 312,
+    "label_id": "/m/0gg8l",
+    "en": "Bluegrass",
+    "zh": "蓝草音乐"
+  },
+  {
+    "class_id": 313,
+    "label_id": "/m/0c3f7m",
+    "en": "Fire alarm",
+    "zh": "火灾警报"
+  },
+  {
+    "class_id": 314,
+    "label_id": "/t/dd00031",
+    "en": "Happy music",
+    "zh": "快乐音乐"
+  },
+  {
+    "class_id": 315,
+    "label_id": "/m/0g12c5",
+    "en": "Distortion",
+    "zh": "失真"
+  },
+  {
+    "class_id": 316,
+    "label_id": "/m/07pp_mv",
+    "en": "Alarm",
+    "zh": "警报"
+  },
+  {
+    "class_id": 317,
+    "label_id": "/m/01d380",
+    "en": "Drill",
+    "zh": "钻孔"
+  },
+  {
+    "class_id": 318,
+    "label_id": "/m/07k1x",
+    "en": "Tools",
+    "zh": "工具"
+  },
+  {
+    "class_id": 319,
+    "label_id": "/m/0_ksk",
+    "en": "Power tool",
+    "zh": "电动工具"
+  },
+  {
+    "class_id": 320,
+    "label_id": "/t/dd00005",
+    "en": "Child singing",
+    "zh": "儿童唱歌"
+  },
+  {
+    "class_id": 321,
+    "label_id": "/m/07qwf61",
+    "en": "Honk",
+    "zh": "喇叭声"
+  },
+  {
+    "class_id": 322,
+    "label_id": "/m/0192l",
+    "en": "Bagpipes",
+    "zh": "风笛"
+  },
+  {
+    "class_id": 323,
+    "label_id": "/m/07r4k75",
+    "en": "Grunt",
+    "zh": "哼声"
+  },
+  {
+    "class_id": 324,
+    "label_id": "/m/06hps",
+    "en": "Rodents, rats, mice",
+    "zh": "啮齿动物/声音"
+  },
+  {
+    "class_id": 325,
+    "label_id": "/m/0l14j_",
+    "en": "Flute",
+    "zh": "长笛"
+  },
+  {
+    "class_id": 326,
+    "label_id": "/m/02x8m",
+    "en": "Funk",
+    "zh": "放克"
+  },
+  {
+    "class_id": 327,
+    "label_id": "/m/0m0jc",
+    "en": "Electronica",
+    "zh": "电子音乐"
+  },
+  {
+    "class_id": 328,
+    "label_id": "/m/05r5wn",
+    "en": "Rattle (instrument)",
+    "zh": "拨浪鼓"
+  },
+  {
+    "class_id": 329,
+    "label_id": "/m/04wptg",
+    "en": "Wedding music",
+    "zh": "婚礼音乐"
+  },
+  {
+    "class_id": 330,
+    "label_id": "/m/07r04",
+    "en": "Truck",
+    "zh": "卡车"
+  },
+  {
+    "class_id": 331,
+    "label_id": "/m/0199g",
+    "en": "Bicycle",
+    "zh": "自行车"
+  },
+  {
+    "class_id": 332,
+    "label_id": "/m/015jpf",
+    "en": "Dial tone",
+    "zh": "拨号音"
+  },
+  {
+    "class_id": 333,
+    "label_id": "/m/07q6cd_",
+    "en": "Squeak",
+    "zh": "吱吱声"
+  },
+  {
+    "class_id": 334,
+    "label_id": "/m/04gy_2",
+    "en": "Battle cry",
+    "zh": "战斗呐喊"
+  },
+  {
+    "class_id": 335,
+    "label_id": "/m/01yrx",
+    "en": "Cat",
+    "zh": "猫"
+  },
+  {
+    "class_id": 336,
+    "label_id": "/m/07qrkrw",
+    "en": "Meow",
+    "zh": "喵"
+  },
+  {
+    "class_id": 337,
+    "label_id": "/t/dd00034",
+    "en": "Tender music",
+    "zh": "温柔的音乐"
+  },
+  {
+    "class_id": 338,
+    "label_id": "/m/07qnq_y",
+    "en": "Thump, thud",
+    "zh": "咚咚声"
+  },
+  {
+    "class_id": 339,
+    "label_id": "/m/05tny_",
+    "en": "Bark",
+    "zh": "吠声"
+  },
+  {
+    "class_id": 340,
+    "label_id": "/m/07qh7jl",
+    "en": "Creak",
+    "zh": "嘎吱声"
+  },
+  {
+    "class_id": 341,
+    "label_id": "/m/07pb8fc",
+    "en": "Idling",
+    "zh": "怠速"
+  },
+  {
+    "class_id": 342,
+    "label_id": "/t/dd00065",
+    "en": "Light engine (high frequency)",
+    "zh": "高频发动机声"
+  },
+  {
+    "class_id": 343,
+    "label_id": "/m/01hnzm",
+    "en": "Ringtone",
+    "zh": "铃声"
+  },
+  {
+    "class_id": 344,
+    "label_id": "/m/07p6fty",
+    "en": "Shout",
+    "zh": "喊声"
+  },
+  {
+    "class_id": 345,
+    "label_id": "/m/056ks2",
+    "en": "Rowboat, canoe, kayak",
+    "zh": "划船声"
+  },
+  {
+    "class_id": 346,
+    "label_id": "/m/03wvsk",
+    "en": "Hair dryer",
+    "zh": "吹风机"
+  },
+  {
+    "class_id": 347,
+    "label_id": "/m/07brj",
+    "en": "Tambourine",
+    "zh": "手铃"
+  },
+  {
+    "class_id": 348,
+    "label_id": "/m/01rd7k",
+    "en": "Turkey",
+    "zh": "火鸡叫声"
+  },
+  {
+    "class_id": 349,
+    "label_id": "/m/07svc2k",
+    "en": "Gobble",
+    "zh": "咕咕声"
+  },
+  {
+    "class_id": 350,
+    "label_id": "/m/02v2lh",
+    "en": "New-age music",
+    "zh": "新世纪音乐"
+  },
+  {
+    "class_id": 351,
+    "label_id": "/m/0fd3y",
+    "en": "Ambient music",
+    "zh": "环境音乐"
+  },
+  {
+    "class_id": 352,
+    "label_id": "/m/06w87",
+    "en": "Steel guitar, slide guitar",
+    "zh": "钢吉他/滑音吉他"
+  },
+  {
+    "class_id": 353,
+    "label_id": "/m/023vsd",
+    "en": "Sanding",
+    "zh": "打磨"
+  },
+  {
+    "class_id": 354,
+    "label_id": "/m/07pdjhy",
+    "en": "Rub",
+    "zh": "摩擦"
+  },
+  {
+    "class_id": 355,
+    "label_id": "/m/07qlwh6",
+    "en": "Squish",
+    "zh": "挤压"
+  },
+  {
+    "class_id": 356,
+    "label_id": "/t/dd00088",
+    "en": "Gush",
+    "zh": "喷涌"
+  },
+  {
+    "class_id": 357,
+    "label_id": "/m/03cczk",
+    "en": "Chewing, mastication",
+    "zh": "咀嚼"
+  },
+  {
+    "class_id": 358,
+    "label_id": "/m/07qjznl",
+    "en": "Tick-tock",
+    "zh": "滴答声"
+  },
+  {
+    "class_id": 359,
+    "label_id": "/m/07r5v4s",
+    "en": "Drip",
+    "zh": "滴水声"
+  },
+  {
+    "class_id": 360,
+    "label_id": "/m/07p7b8y",
+    "en": "Fill (with liquid)",
+    "zh": "装液体"
+  },
+  {
+    "class_id": 361,
+    "label_id": "/t/dd00037",
+    "en": "Scary music",
+    "zh": "恐怖音乐"
+  },
+  {
+    "class_id": 362,
+    "label_id": "/m/02z32qm",
+    "en": "Fusillade",
+    "zh": "连射"
+  },
+  {
+    "class_id": 363,
+    "label_id": "/m/0b9m1",
+    "en": "Harmonic",
+    "zh": "谐波"
+  },
+  {
+    "class_id": 364,
+    "label_id": "/m/08j51y",
+    "en": "Dental drill, dentist's drill",
+    "zh": "牙钻"
+  },
+  {
+    "class_id": 365,
+    "label_id": "/m/0chx_",
+    "en": "White noise",
+    "zh": "白噪音"
+  },
+  {
+    "class_id": 366,
+    "label_id": "/m/02p01q",
+    "en": "Filing (rasp)",
+    "zh": "刮擦声"
+  },
+  {
+    "class_id": 367,
+    "label_id": "/m/0btp2",
+    "en": "Traffic noise, roadway noise",
+    "zh": "交通噪音/道路噪音"
+  },
+  {
+    "class_id": 368,
+    "label_id": "/m/02mfyn",
+    "en": "Car alarm",
+    "zh": "汽车警报"
+  },
+  {
+    "class_id": 369,
+    "label_id": "/m/07r_25d",
+    "en": "Coo",
+    "zh": "咕咕声"
+  },
+  {
+    "class_id": 370,
+    "label_id": "/m/0h0rv",
+    "en": "Pigeon, dove",
+    "zh": "鸽子/鸠"
+  },
+  {
+    "class_id": 371,
+    "label_id": "/m/01280g",
+    "en": "Wild animals",
+    "zh": "野生动物"
+  },
+  {
+    "class_id": 372,
+    "label_id": "/m/023pjk",
+    "en": "Cutlery, silverware",
+    "zh": "餐具"
+  },
+  {
+    "class_id": 373,
+    "label_id": "/m/04brg2",
+    "en": "Dishes, pots, and pans",
+    "zh": "炊具"
+  },
+  {
+    "class_id": 374,
+    "label_id": "/m/07s0s5r",
+    "en": "Strum",
+    "zh": "弹拨"
+  },
+  {
+    "class_id": 375,
+    "label_id": "/m/0dwt5",
+    "en": "Vibraphone",
+    "zh": "碰铃"
+  },
+  {
+    "class_id": 376,
+    "label_id": "/m/02w4v",
+    "en": "Folk music",
+    "zh": "民乐"
+  },
+  {
+    "class_id": 377,
+    "label_id": "/m/01s0ps",
+    "en": "Electric piano",
+    "zh": "电钢琴"
+  },
+  {
+    "class_id": 378,
+    "label_id": "/m/03gvt",
+    "en": "Hammond organ",
+    "zh": "Hammond 管风琴声"
+  },
+  {
+    "class_id": 379,
+    "label_id": "/m/05148p4",
+    "en": "Keyboard (musical)",
+    "zh": "键盘（乐器）"
+  },
+  {
+    "class_id": 380,
+    "label_id": "/m/05r5c",
+    "en": "Piano",
+    "zh": "钢琴"
+  },
+  {
+    "class_id": 381,
+    "label_id": "/m/07q7njn",
+    "en": "Chink, clink",
+    "zh": "叮当声"
+  },
+  {
+    "class_id": 382,
+    "label_id": "/m/068zj",
+    "en": "Pig",
+    "zh": "猪叫声"
+  },
+  {
+    "class_id": 383,
+    "label_id": "/m/0939n_",
+    "en": "Gargling",
+    "zh": "咕噜声"
+  },
+  {
+    "class_id": 384,
+    "label_id": "/m/018j2",
+    "en": "Banjo",
+    "zh": "班卓琴"
+  },
+  {
+    "class_id": 385,
+    "label_id": "/m/034srq",
+    "en": "Waves, surf",
+    "zh": "海浪"
+  },
+  {
+    "class_id": 386,
+    "label_id": "/m/06q74",
+    "en": "Ship",
+    "zh": "船只"
+  },
+  {
+    "class_id": 387,
+    "label_id": "/m/07qfgpx",
+    "en": "Jingle, tinkle",
+    "zh": "铃声/叮当声"
+  },
+  {
+    "class_id": 388,
+    "label_id": "/m/0l156b",
+    "en": "Steelpan",
+    "zh": "钢鼓"
+  },
+  {
+    "class_id": 389,
+    "label_id": "/m/07r67yg",
+    "en": "Ding-dong",
+    "zh": "叮咚声"
+  },
+  {
+    "class_id": 390,
+    "label_id": "/m/0140xf",
+    "en": "Christmas music",
+    "zh": "圣诞音乐"
+  },
+  {
+    "class_id": 391,
+    "label_id": "/m/07qv_x_",
+    "en": "Shuffle",
+    "zh": "摇摆"
+  },
+  {
+    "class_id": 392,
+    "label_id": "/m/02l6bg",
+    "en": "Propeller, airscrew",
+    "zh": "螺旋桨"
+  },
+  {
+    "class_id": 393,
+    "label_id": "/m/01w250",
+    "en": "Whistling",
+    "zh": "吹哨声"
+  },
+  {
+    "class_id": 394,
+    "label_id": "/m/0gywn",
+    "en": "Soul music",
+    "zh": "灵魂音乐"
+  },
+  {
+    "class_id": 395,
+    "label_id": "/t/dd00002",
+    "en": "Baby cry, infant cry",
+    "zh": "婴儿哭声"
+  },
+  {
+    "class_id": 396,
+    "label_id": "/m/07s12q4",
+    "en": "Crunch",
+    "zh": "脆响"
+  },
+  {
+    "class_id": 397,
+    "label_id": "/m/02qmj0d",
+    "en": "String section",
+    "zh": "弦乐"
+  },
+  {
+    "class_id": 398,
+    "label_id": "/m/03mb9",
+    "en": "House music",
+    "zh": "House舞曲"
+  },
+  {
+    "class_id": 399,
+    "label_id": "/m/039jq",
+    "en": "Glass",
+    "zh": "玻璃"
+  },
+  {
+    "class_id": 400,
+    "label_id": "/m/0ghcn6",
+    "en": "Growling",
+    "zh": "咕噜声"
+  },
+  {
+    "class_id": 401,
+    "label_id": "/m/0l156k",
+    "en": "Whistle",
+    "zh": "哨声"
+  },
+  {
+    "class_id": 402,
+    "label_id": "/m/0g293",
+    "en": "Music of Latin America",
+    "zh": "拉丁美洲音乐"
+  },
+  {
+    "class_id": 403,
+    "label_id": "/m/01b82r",
+    "en": "Sawing",
+    "zh": "锯木"
+  },
+  {
+    "class_id": 404,
+    "label_id": "/m/01h8n0",
+    "en": "Conversation",
+    "zh": "对话"
+  },
+  {
+    "class_id": 405,
+    "label_id": "/m/06h7j",
+    "en": "Run",
+    "zh": "跑步"
+  },
+  {
+    "class_id": 406,
+    "label_id": "/m/06_fw",
+    "en": "Skateboard",
+    "zh": "滑板"
+  },
+  {
+    "class_id": 407,
+    "label_id": "/m/07pn_8q",
+    "en": "Chopping (food)",
+    "zh": "切菜"
+  },
+  {
+    "class_id": 408,
+    "label_id": "/m/0395lw",
+    "en": "Bell",
+    "zh": "铃声"
+  },
+  {
+    "class_id": 409,
+    "label_id": "/m/0642b4",
+    "en": "Cupboard open or close",
+    "zh": "橱柜开合声"
+  },
+  {
+    "class_id": 410,
+    "label_id": "/m/07s2xch",
+    "en": "Groan",
+    "zh": "呻吟"
+  },
+  {
+    "class_id": 411,
+    "label_id": "/m/01c194",
+    "en": "Mantra",
+    "zh": "咒语"
+  },
+  {
+    "class_id": 412,
+    "label_id": "/m/03w41f",
+    "en": "Church bell",
+    "zh": "教堂钟声"
+  },
+  {
+    "class_id": 413,
+    "label_id": "/m/02rtxlg",
+    "en": "Whispering",
+    "zh": "耳语"
+  },
+  {
+    "class_id": 414,
+    "label_id": "/m/07qc9xj",
+    "en": "Clicking",
+    "zh": "咔嗒声"
+  },
+  {
+    "class_id": 415,
+    "label_id": "/m/01x3z",
+    "en": "Clock",
+    "zh": "钟声"
+  },
+  {
+    "class_id": 416,
+    "label_id": "/m/046dlr",
+    "en": "Alarm clock",
+    "zh": "闹钟"
+  },
+  {
+    "class_id": 417,
+    "label_id": "/m/02bxd",
+    "en": "Didgeridoo",
+    "zh": "迪杰里杜管"
+  },
+  {
+    "class_id": 418,
+    "label_id": "/t/dd00048",
+    "en": "Train wheels squealing",
+    "zh": "火车轮尖叫"
+  },
+  {
+    "class_id": 419,
+    "label_id": "/m/016cjb",
+    "en": "Gospel music",
+    "zh": "福音音乐"
+  },
+  {
+    "class_id": 420,
+    "label_id": "/m/07s02z0",
+    "en": "Squeal",
+    "zh": "尖叫声"
+  },
+  {
+    "class_id": 421,
+    "label_id": "/m/03q5t",
+    "en": "Harpsichord",
+    "zh": "羽管键琴"
+  },
+  {
+    "class_id": 422,
+    "label_id": "/m/07rdhzs",
+    "en": "Whack, thwack",
+    "zh": "拍打声"
+  },
+  {
+    "class_id": 423,
+    "label_id": "/m/07qdb04",
+    "en": "Quack",
+    "zh": "呱呱声"
+  },
+  {
+    "class_id": 424,
+    "label_id": "/m/0242l",
+    "en": "Coin (dropping)",
+    "zh": "硬币掉落"
+  },
+  {
+    "class_id": 425,
+    "label_id": "/m/05fw6t",
+    "en": "Music for children",
+    "zh": "儿童音乐"
+  },
+  {
+    "class_id": 426,
+    "label_id": "/m/0dl83",
+    "en": "Arrow",
+    "zh": "箭"
+  },
+  {
+    "class_id": 427,
+    "label_id": "/m/07qn5dc",
+    "en": "Crowing, cock-a-doodle-doo",
+    "zh": "公鸡打鸣"
+  },
+  {
+    "class_id": 428,
+    "label_id": "/m/015vgc",
+    "en": "Carnatic music",
+    "zh": "卡纳蒂克音乐"
+  },
+  {
+    "class_id": 429,
+    "label_id": "/m/0ytgt",
+    "en": "Child speech, kid speaking",
+    "zh": "儿童说话"
+  },
+  {
+    "class_id": 430,
+    "label_id": "/m/02fxyj",
+    "en": "Humming",
+    "zh": "哼唱"
+  },
+  {
+    "class_id": 431,
+    "label_id": "/m/07qw_06",
+    "en": "Wail, moan",
+    "zh": "哀号"
+  },
+  {
+    "class_id": 432,
+    "label_id": "/m/0d31p",
+    "en": "Vacuum cleaner",
+    "zh": "吸尘器"
+  },
+  {
+    "class_id": 433,
+    "label_id": "/t/dd00135",
+    "en": "Children shouting",
+    "zh": "儿童喊叫"
+  },
+  {
+    "class_id": 434,
+    "label_id": "/m/06mb1",
+    "en": "Rain",
+    "zh": "雨声"
+  },
+  {
+    "class_id": 435,
+    "label_id": "/m/0ngt1",
+    "en": "Thunder",
+    "zh": "雷声"
+  },
+  {
+    "class_id": 436,
+    "label_id": "/m/07bjf",
+    "en": "Single-lens reflex camera",
+    "zh": "单反相机"
+  },
+  {
+    "class_id": 437,
+    "label_id": "/m/0dv5r",
+    "en": "Camera",
+    "zh": "相机"
+  },
+  {
+    "class_id": 438,
+    "label_id": "/t/dd00006",
+    "en": "Synthetic singing",
+    "zh": "合成歌声"
+  },
+  {
+    "class_id": 439,
+    "label_id": "/m/01bns_",
+    "en": "Zither",
+    "zh": "琴弦乐器"
+  },
+  {
+    "class_id": 440,
+    "label_id": "/t/dd00112",
+    "en": "Crumpling, crinkling",
+    "zh": "揉纸/响声"
+  },
+  {
+    "class_id": 441,
+    "label_id": "/m/01y3hg",
+    "en": "Smoke detector, smoke alarm",
+    "zh": "烟雾探测器"
+  },
+  {
+    "class_id": 442,
+    "label_id": "/m/01h82_",
+    "en": "Engine knocking",
+    "zh": "发动机敲击声"
+  },
+  {
+    "class_id": 443,
+    "label_id": "/m/01swy6",
+    "en": "Yodeling",
+    "zh": "吆喝"
+  },
+  {
+    "class_id": 444,
+    "label_id": "/m/0cj0r",
+    "en": "Pink noise",
+    "zh": "粉噪"
+  },
+  {
+    "class_id": 445,
+    "label_id": "/m/0jb2l",
+    "en": "Thunderstorm",
+    "zh": "雷暴"
+  },
+  {
+    "class_id": 446,
+    "label_id": "/m/07pqc89",
+    "en": "Trickle, dribble",
+    "zh": "滴水声"
+  },
+  {
+    "class_id": 447,
+    "label_id": "/m/06j64v",
+    "en": "Middle Eastern music",
+    "zh": "中东音乐"
+  },
+  {
+    "class_id": 448,
+    "label_id": "/m/0hdsk",
+    "en": "Chirp tone",
+    "zh": "鸟鸣声"
+  },
+  {
+    "class_id": 449,
+    "label_id": "/m/0l15bq",
+    "en": "Clapping",
+    "zh": "拍手声"
+  },
+  {
+    "class_id": 450,
+    "label_id": "/m/01jwx6",
+    "en": "Vibration",
+    "zh": "振动声"
+  },
+  {
+    "class_id": 451,
+    "label_id": "/m/028sqc",
+    "en": "Music of Asia",
+    "zh": "亚洲音乐"
+  },
+  {
+    "class_id": 452,
+    "label_id": "/m/07p78v5",
+    "en": "Zing",
+    "zh": "叮当声"
+  },
+  {
+    "class_id": 453,
+    "label_id": "/m/027m70_",
+    "en": "Jingle bell",
+    "zh": "铃铛声"
+  },
+  {
+    "class_id": 454,
+    "label_id": "/m/016622",
+    "en": "Tubular bells",
+    "zh": "管钟声"
+  },
+  {
+    "class_id": 455,
+    "label_id": "/m/08cyft",
+    "en": "Electronic dance music",
+    "zh": "电子舞曲"
+  },
+  {
+    "class_id": 456,
+    "label_id": "/m/01g90h",
+    "en": "Stomach rumble",
+    "zh": "胃鸣声"
+  },
+  {
+    "class_id": 457,
+    "label_id": "/m/07qjznt",
+    "en": "Tick",
+    "zh": "咔哒声"
+  },
+  {
+    "class_id": 458,
+    "label_id": "/m/0cdnk",
+    "en": "Roaring cats (lions, tigers)",
+    "zh": "咆哮声（猫/狮/虎）"
+  },
+  {
+    "class_id": 459,
+    "label_id": "/m/05_wcq",
+    "en": "Bird flight, flapping wings",
+    "zh": "鸟鸣，拍翅声"
+  },
+  {
+    "class_id": 460,
+    "label_id": "/m/07c52",
+    "en": "Television",
+    "zh": "电视"
+  },
+  {
+    "class_id": 461,
+    "label_id": "/m/02rhddq",
+    "en": "Reversing beeps",
+    "zh": "倒车蜂鸣声"
+  },
+  {
+    "class_id": 462,
+    "label_id": "/m/07pjwq1",
+    "en": "Buzz",
+    "zh": "嗡鸣声"
+  },
+  {
+    "class_id": 463,
+    "label_id": "/m/03m5k",
+    "en": "Harp",
+    "zh": "竖琴"
+  },
+  {
+    "class_id": 464,
+    "label_id": "/m/0ggq0m",
+    "en": "Classical music",
+    "zh": "古典音乐"
+  },
+  {
+    "class_id": 465,
+    "label_id": "/m/03l9g",
+    "en": "Hammer",
+    "zh": "锤子"
+  },
+  {
+    "class_id": 466,
+    "label_id": "/m/07s0dtb",
+    "en": "Gasp",
+    "zh": "抽气声"
+  },
+  {
+    "class_id": 467,
+    "label_id": "/m/03cl9h",
+    "en": "Ice cream truck, ice cream van",
+    "zh": "冰淇淋车"
+  },
+  {
+    "class_id": 468,
+    "label_id": "/m/07kc_",
+    "en": "Theremin",
+    "zh": "特雷门琴"
+  },
+  {
+    "class_id": 469,
+    "label_id": "/m/0jtg0",
+    "en": "Sitar",
+    "zh": "西塔琴"
+  },
+  {
+    "class_id": 470,
+    "label_id": "/m/0k65p",
+    "en": "Hands",
+    "zh": "手"
+  },
+  {
+    "class_id": 471,
+    "label_id": "/m/07r10fb",
+    "en": "Raindrop",
+    "zh": "雨滴"
+  },
+  {
+    "class_id": 472,
+    "label_id": "/m/01j3sz",
+    "en": "Laughter",
+    "zh": "笑声"
+  },
+  {
+    "class_id": 473,
+    "label_id": "/t/dd00001",
+    "en": "Baby laughter",
+    "zh": "婴儿笑声"
+  },
+  {
+    "class_id": 474,
+    "label_id": "/m/03wwcy",
+    "en": "Doorbell",
+    "zh": "门铃"
+  },
+  {
+    "class_id": 475,
+    "label_id": "/m/012xff",
+    "en": "Toothbrush",
+    "zh": "牙刷"
+  },
+  {
+    "class_id": 476,
+    "label_id": "/m/07qv_d5",
+    "en": "Toot",
+    "zh": "嘟一声"
+  },
+  {
+    "class_id": 477,
+    "label_id": "/m/01d3sd",
+    "en": "Snoring",
+    "zh": "打鼾"
+  },
+  {
+    "class_id": 478,
+    "label_id": "/m/07sx8x_",
+    "en": "Squawk",
+    "zh": "嘎嘎声"
+  },
+  {
+    "class_id": 479,
+    "label_id": "/m/0gy1t2s",
+    "en": "Bicycle bell",
+    "zh": "自行车铃声"
+  },
+  {
+    "class_id": 480,
+    "label_id": "/m/07qf0zm",
+    "en": "Howl",
+    "zh": "嚎叫"
+  },
+  {
+    "class_id": 481,
+    "label_id": "/m/0l14t7",
+    "en": "Singing bowl",
+    "zh": "鸣钟声"
+  },
+  {
+    "class_id": 482,
+    "label_id": "/m/01sm1g",
+    "en": "Wood block",
+    "zh": "木块声"
+  },
+  {
+    "class_id": 483,
+    "label_id": "/m/028ght",
+    "en": "Applause",
+    "zh": "掌声"
+  },
+  {
+    "class_id": 484,
+    "label_id": "/m/09f96",
+    "en": "Mosquito",
+    "zh": "蚊子声"
+  },
+  {
+    "class_id": 485,
+    "label_id": "/m/053hz1",
+    "en": "Cheering",
+    "zh": "欢呼"
+  },
+  {
+    "class_id": 486,
+    "label_id": "/m/03_d0",
+    "en": "Jazz",
+    "zh": "爵士乐"
+  },
+  {
+    "class_id": 487,
+    "label_id": "/m/07r_k2n",
+    "en": "Yip",
+    "zh": "吠声"
+  },
+  {
+    "class_id": 488,
+    "label_id": "/m/07rc7d9",
+    "en": "Bow-wow",
+    "zh": "汪汪"
+  },
+  {
+    "class_id": 489,
+    "label_id": "/m/01v_m0",
+    "en": "Sine wave",
+    "zh": "正弦波"
+  },
+  {
+    "class_id": 490,
+    "label_id": "/m/0c2wf",
+    "en": "Typewriter",
+    "zh": "打字声"
+  },
+  {
+    "class_id": 491,
+    "label_id": "/m/07pdhp0",
+    "en": "Biting",
+    "zh": "咬声"
+  },
+  {
+    "class_id": 492,
+    "label_id": "/m/0glt670",
+    "en": "Hip hop music",
+    "zh": "嘻哈音乐"
+  },
+  {
+    "class_id": 493,
+    "label_id": "/m/06bxc",
+    "en": "Rapping",
+    "zh": "说唱"
+  },
+  {
+    "class_id": 494,
+    "label_id": "/m/064t9",
+    "en": "Pop music",
+    "zh": "流行音乐"
+  },
+  {
+    "class_id": 495,
+    "label_id": "/m/0j2kx",
+    "en": "Waterfall",
+    "zh": "瀑布声"
+  },
+  {
+    "class_id": 496,
+    "label_id": "/m/07pyf11",
+    "en": "Flap",
+    "zh": "拍打声"
+  },
+  {
+    "class_id": 497,
+    "label_id": "/m/07plct2",
+    "en": "Crushing",
+    "zh": "挤压声"
+  },
+  {
+    "class_id": 498,
+    "label_id": "/m/0463cq4",
+    "en": "Crying, sobbing",
+    "zh": "哭泣，抽泣"
+  },
+  {
+    "class_id": 499,
+    "label_id": "/m/07p9k1k",
+    "en": "Sizzle",
+    "zh": "嘶嘶声"
+  },
+  {
+    "class_id": 500,
+    "label_id": "/m/0dxrf",
+    "en": "Frying (food)",
+    "zh": "煎炸食物"
+  },
+  {
+    "class_id": 501,
+    "label_id": "/m/024dl",
+    "en": "Cash register",
+    "zh": "收银机"
+  },
+  {
+    "class_id": 502,
+    "label_id": "/m/0150b9",
+    "en": "Change ringing (campanology)",
+    "zh": "钟声变调"
+  },
+  {
+    "class_id": 503,
+    "label_id": "/m/01wy6",
+    "en": "Clarinet",
+    "zh": "单簧管"
+  },
+  {
+    "class_id": 504,
+    "label_id": "/m/07pqn27",
+    "en": "Bouncing",
+    "zh": "弹跳"
+  },
+  {
+    "class_id": 505,
+    "label_id": "/m/0dq0md",
+    "en": "Music of Bollywood",
+    "zh": "宝莱坞音乐"
+  },
+  {
+    "class_id": 506,
+    "label_id": "/m/02p3nc",
+    "en": "Hiccup",
+    "zh": "打嗝"
+  },
+  {
+    "class_id": 507,
+    "label_id": "/m/07n_g",
+    "en": "Tuning fork",
+    "zh": "音叉"
+  },
+  {
+    "class_id": 508,
+    "label_id": "/m/025td0t",
+    "en": "Background music",
+    "zh": "背景音乐"
+  },
+  {
+    "class_id": 509,
+    "label_id": "/m/07qcx4z",
+    "en": "Tearing",
+    "zh": "撕裂"
+  },
+  {
+    "class_id": 510,
+    "label_id": "/m/0326g",
+    "en": "Flamenco",
+    "zh": "弗拉门戈"
+  },
+  {
+    "class_id": 511,
+    "label_id": "/m/08p9q4",
+    "en": "Sidetone",
+    "zh": "侧音"
+  },
+  {
+    "class_id": 512,
+    "label_id": "/m/018w8",
+    "en": "Basketball bounce",
+    "zh": "篮球弹跳"
+  },
+  {
+    "class_id": 513,
+    "label_id": "/m/06cqb",
+    "en": "Reggae",
+    "zh": "雷鬼"
+  },
+  {
+    "class_id": 514,
+    "label_id": "/m/0790c",
+    "en": "Sonar",
+    "zh": "声纳"
+  },
+  {
+    "class_id": 515,
+    "label_id": "/m/05zppz",
+    "en": "Male speech, man speaking",
+    "zh": "男性说话声"
+  },
+  {
+    "class_id": 516,
+    "label_id": "/m/0195fx",
+    "en": "Subway, metro, underground",
+    "zh": "地铁/地下铁"
+  },
+  {
+    "class_id": 517,
+    "label_id": "/m/03dnzn",
+    "en": "Bathtub (filling or washing)",
+    "zh": "浴缸（注水或清洗）"
+  },
+  {
+    "class_id": 518,
+    "label_id": "/m/01b9nn",
+    "en": "Reverberation",
+    "zh": "混响"
+  },
+  {
+    "class_id": 519,
+    "label_id": "/m/07ptfmf",
+    "en": "Stir",
+    "zh": "搅拌"
+  },
+  {
+    "class_id": 520,
+    "label_id": "/m/02qldy",
+    "en": "Narration, monologue",
+    "zh": "叙述/独白"
+  },
+  {
+    "class_id": 521,
+    "label_id": "/t/dd00134",
+    "en": "Car passing by",
+    "zh": "汽车经过"
+  },
+  {
+    "class_id": 522,
+    "label_id": "/m/02zsn",
+    "en": "Female speech, woman speaking",
+    "zh": "女性说话"
+  },
+  {
+    "class_id": 523,
+    "label_id": "/t/dd00038",
+    "en": "Rain on surface",
+    "zh": "雨打表面"
+  },
+  {
+    "class_id": 524,
+    "label_id": "/m/05rj2",
+    "en": "Shuffling cards",
+    "zh": "洗牌"
+  },
+  {
+    "class_id": 525,
+    "label_id": "/m/032n05",
+    "en": "Whale vocalization",
+    "zh": "鲸鱼叫声"
+  },
+  {
+    "class_id": 526,
+    "label_id": "/m/07ppn3j",
+    "en": "Sniff",
+    "zh": "嗅闻"
+  }
+]

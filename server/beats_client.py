@@ -14,7 +14,7 @@ from utils.logger import logger
 
 BEATS_CLIENT_KEY = "beats_client"
 
-_LABELS_ZH = {
+_COMMON_LABELS_ZH = {
     "Speech": "人声",
     "Male speech, man speaking": "男性说话",
     "Female speech, woman speaking": "女性说话",
@@ -68,6 +68,36 @@ _LABELS_ZH = {
 }
 
 
+def _load_label_translations() -> tuple[dict[str, str], dict[int, dict[str, str]]]:
+    """Load the static mapping for the checkpoint's complete 527 classes."""
+    path = Path(__file__).with_name("audioset_labels_zh.json")
+    try:
+        entries = json.loads(path.read_text(encoding="utf-8"))
+        by_id = {
+            str(entry["label_id"]): str(entry["zh"])
+            for entry in entries
+            if entry.get("label_id") and entry.get("zh")
+        }
+        by_class = {
+            int(entry["class_id"]): {
+                "label_id": str(entry["label_id"]),
+                "en": str(entry["en"]),
+                "zh": str(entry["zh"]),
+            }
+            for entry in entries
+            if entry.get("class_id") is not None
+        }
+        if len(by_id) != 527 or len(by_class) != 527:
+            raise ValueError(
+                f"expected 527 labels, got ids={len(by_id)} classes={len(by_class)}"
+            )
+        logger.info("Loaded complete AudioSet Chinese label table: %d classes", len(by_id))
+        return by_id, by_class
+    except Exception as exc:
+        logger.warning("Unable to load full Chinese label table %s: %s", path, exc)
+        return {}, {}
+
+
 def _load_ontology() -> dict[str, str]:
     path = Path(__file__).with_name("audioset_ontology.json")
     try:
@@ -83,6 +113,7 @@ def _load_ontology() -> dict[str, str]:
 
 
 _ONTOLOGY = _load_ontology()
+_LABELS_ZH_BY_ID, _LABELS_BY_CLASS = _load_label_translations()
 
 
 def _format_summary(events: list[dict[str, Any]], limit: int = 5) -> str:
@@ -178,11 +209,34 @@ class BeatsClient:
         events = []
         for raw_event in payload.get("events", []):
             event = dict(raw_event)
-            label_id = str(event.get("label") or event.get("label_id") or "")
-            label = _ONTOLOGY.get(label_id, label_id or "Unknown")
+            class_id_raw = event.get("class_id")
+            try:
+                class_id = int(class_id_raw)
+            except (TypeError, ValueError):
+                class_id = -1
+            checkpoint_label = _LABELS_BY_CLASS.get(class_id, {})
+            label_id = str(
+                event.get("label")
+                or event.get("label_id")
+                or checkpoint_label.get("label_id")
+                or ""
+            )
+            label = str(
+                checkpoint_label.get("en")
+                or _ONTOLOGY.get(label_id)
+                or label_id
+                or "Unknown"
+            )
+            label_zh = str(
+                checkpoint_label.get("zh")
+                or _LABELS_ZH_BY_ID.get(label_id)
+                or _COMMON_LABELS_ZH.get(label)
+                or label
+            )
+            event["class_id"] = class_id
             event["label_id"] = label_id
             event["label"] = label
-            event["label_zh"] = _LABELS_ZH.get(label, label)
+            event["label_zh"] = label_zh
             events.append(event)
 
         return {

@@ -7,7 +7,14 @@ os.environ.setdefault("CONTENT_ANALYSIS_REQUIRE_API_KEY", "0")
 from fastapi.testclient import TestClient
 import httpx
 
-from app import app, apply_grounding_guardrails, build_structured_input
+import app as app_module
+from app import (
+    StructuredAnalysisRequest,
+    _ollama_analyze,
+    app,
+    apply_grounding_guardrails,
+    build_structured_input,
+)
 import dialogue_understanding as dialogue_module
 from dialogue_understanding import (
     _fallback,
@@ -98,6 +105,55 @@ def test_dialogue_falls_back_to_local_when_training_is_unreachable(monkeypatch):
     ]
     assert metadata["routing"]["selected"] == "deployment-fallback"
     assert metadata["routing"]["fallback_used"] is True
+
+
+def test_digest_only_request_bypasses_general_local_analysis(monkeypatch):
+    calls = []
+
+    async def fake_dialogue(client, **kwargs):
+        calls.append(kwargs)
+        result, metadata = _route_result("训练服务器直接结果")
+        metadata["routing"] = {
+            "selected": "training-primary",
+            "model": "qwen3:8b",
+            "fallback_used": False,
+        }
+        return result, metadata
+
+    class NoGeneralPostClient:
+        async def post(self, *args, **kwargs):
+            raise AssertionError("digest-only path must not call the general analyzer")
+
+    monkeypatch.setattr(app_module, "generate_dialogue_understanding", fake_dialogue)
+    settings = SimpleNamespace(
+        max_structured_bytes=512 * 1024,
+        max_transcript_chars=24000,
+        ollama_url="http://local",
+        ollama_model="qwen2.5:7b",
+        ollama_timeout_seconds=180,
+        dialogue_primary_url="http://training",
+        dialogue_primary_model="qwen3:8b",
+        dialogue_primary_timeout_seconds=75,
+    )
+    request = StructuredAnalysisRequest.model_validate(
+        {
+            "conversation": {
+                "segments": [
+                    {"id": "seg-1", "speaker": "Speaker_00", "text": "测试内容"}
+                ]
+            },
+            "tasks": ["digest", "summary"],
+        }
+    )
+
+    analysis, metadata = asyncio.run(
+        _ollama_analyze(NoGeneralPostClient(), settings, request)
+    )
+
+    assert len(calls) == 1
+    assert analysis["dialogue_understanding"] == "训练服务器直接结果"
+    assert analysis["dialogue_understanding_meta"]["route"] == "training-primary"
+    assert metadata["model"] == "qwen3:8b"
 
 
 def test_dialogue_ledger_normalizes_only_known_boolean_drift():

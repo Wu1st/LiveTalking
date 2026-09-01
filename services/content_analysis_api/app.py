@@ -1265,6 +1265,70 @@ async def _ollama_analyze(
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     encoded = _validate_structured_size(value, settings)
     started = time.perf_counter()
+    requested_tasks = set(value.tasks)
+    # The web dialogue card asks only for a natural understanding.  Route that
+    # request directly to training Qwen3 (with local Qwen2.5 failover) instead
+    # of first spending another full generation on the local general analyzer.
+    # Requests for QA, relationships, speakers, emotion or scene keep using the
+    # existing multimodal analysis path below.
+    if requested_tasks and requested_tasks <= {"digest", "summary"}:
+        dialogue, dialogue_metadata = await generate_dialogue_understanding(
+            client,
+            ollama_url=settings.ollama_url,
+            model=settings.ollama_model,
+            timeout_seconds=settings.ollama_timeout_seconds,
+            segments=value.conversation.segments,
+            primary_ollama_url=settings.dialogue_primary_url or None,
+            primary_model=settings.dialogue_primary_model or None,
+            primary_timeout_seconds=settings.dialogue_primary_timeout_seconds,
+        )
+        routing = dialogue_metadata.get("routing") or {}
+        route_model = routing.get("model") or settings.ollama_model
+        route_meta = {
+            "fact_count": dialogue["fact_count"],
+            "used_fact_ids": dialogue["used_fact_ids"],
+            "evidence_segment_ids": dialogue["evidence_segment_ids"],
+            "fallback_used": dialogue["fallback_used"],
+            "route": routing.get("selected"),
+            "route_model": route_model,
+            "route_fallback_used": routing.get("fallback_used", False),
+        }
+        content_type = (
+            value.content_type_hint
+            if value.content_type_hint != "auto"
+            else "other"
+        )
+        text = dialogue["text"]
+        return (
+            {
+                "answer": text,
+                "summary": text,
+                "dialogue_understanding": text,
+                "dialogue_understanding_meta": route_meta,
+                "content_digest": {
+                    "content_type": content_type,
+                    "overview": text,
+                    "key_points": [],
+                    "topic_progression": [],
+                    "speaker_contributions": [],
+                    "decisions": [],
+                    "action_items": [],
+                    "open_questions": [],
+                },
+                "relationships": [],
+                "emotion_analysis": {"status": "not_requested"},
+                "scene_analysis": {"status": "not_requested"},
+                "evidence_segment_ids": dialogue["evidence_segment_ids"],
+                "uncertainties": dialogue["uncertainties"],
+            },
+            {
+                "model": route_model,
+                "elapsed_seconds": round(time.perf_counter() - started, 3),
+                "prompt_eval_count": None,
+                "eval_count": None,
+                "dialogue_understanding": dialogue_metadata,
+            },
+        )
     response = await client.post(
         f"{settings.ollama_url}/api/chat",
         json={
@@ -1300,7 +1364,7 @@ async def _ollama_analyze(
     # user-facing overview with the evidence-first single-text understanding.
     # A dialogue-generation failure must not turn an otherwise valid analysis
     # request into a 502 response.
-    if {"digest", "summary"} & set(value.tasks):
+    if {"digest", "summary"} & requested_tasks:
         try:
             dialogue, dialogue_metadata = await generate_dialogue_understanding(
                 client,

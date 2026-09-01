@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import subprocess
+import tempfile
 import unittest
+from pathlib import Path
 
 import numpy as np
 from aiohttp import FormData
@@ -44,6 +47,42 @@ def upload(audio: np.ndarray, **fields: str) -> FormData:
     for key, value in fields.items():
         form.add_field(key, value)
     return form
+
+
+def upload_bytes(
+    audio_bytes: bytes,
+    filename: str,
+    content_type: str,
+    **fields: str,
+) -> FormData:
+    form = FormData()
+    form.add_field(
+        "file",
+        audio_bytes,
+        filename=filename,
+        content_type=content_type,
+    )
+    for key, value in fields.items():
+        form.add_field(key, value)
+    return form
+
+
+def encode_m4a(audio: np.ndarray, codec: str) -> bytes:
+    with tempfile.TemporaryDirectory() as directory:
+        source = Path(directory) / "source.wav"
+        target = Path(directory) / f"test-{codec}.m4a"
+        source.write_bytes(encode_pcm16_wav(audio))
+        completed = subprocess.run(
+            [
+                "ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+                "-i", str(source), "-c:a", codec, str(target),
+            ],
+            capture_output=True,
+            check=False,
+        )
+        if completed.returncode != 0:
+            raise RuntimeError(completed.stderr.decode("utf-8", errors="replace"))
+        return target.read_bytes()
 
 
 class ApiTest(unittest.IsolatedAsyncioTestCase):
@@ -93,6 +132,40 @@ class ApiTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response.status, 204)
         self.assertEqual(response.headers["X-VAD-Interval-Count"], "0")
 
+    async def test_prepare_accepts_seekable_m4a_codecs(self) -> None:
+        audio = np.full(32000, 0.25, dtype=np.float32)
+        for codec in ("aac", "alac"):
+            with self.subTest(codec=codec):
+                response = await self.client.post(
+                    "/api/v1/speech_frontend/prepare",
+                    data=upload_bytes(
+                        encode_m4a(audio, codec),
+                        filename=f"test-{codec}.m4a",
+                        content_type="audio/mp4",
+                        output="speech",
+                    ),
+                )
+                body = await response.read()
+                self.assertEqual(response.status, 200)
+                self.assertEqual(response.content_type, "audio/wav")
+                self.assertEqual(body[:4], b"RIFF")
+                self.assertEqual(body[8:12], b"WAVE")
+
+    async def test_invalid_audio_returns_non_200_json_error(self) -> None:
+        response = await self.client.post(
+            "/api/v1/speech_frontend/prepare",
+            data=upload_bytes(
+                b'{"code": -1, "msg": "not audio"}',
+                filename="not-audio.wav",
+                content_type="application/json",
+                output="speech",
+            ),
+        )
+        payload = await response.json()
+        self.assertEqual(response.status, 422)
+        self.assertEqual(payload["code"], -1)
+        self.assertIn("无法解码上传的音频", payload["msg"])
+
     async def test_livetalking_alias(self) -> None:
         response = await self.client.post(
             "/humanaudio_vad",
@@ -105,4 +178,3 @@ class ApiTest(unittest.IsolatedAsyncioTestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

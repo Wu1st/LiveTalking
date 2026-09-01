@@ -1,24 +1,44 @@
 from __future__ import annotations
 
 import io
+import os
 import subprocess
+import tempfile
 import wave
+from pathlib import Path
 
 import numpy as np
 
 
-def decode_audio_bytes(audio_bytes: bytes) -> np.ndarray:
+def _safe_suffix(filename: str) -> str:
+    suffix = Path(filename or "").suffix.lower()
+    if suffix and len(suffix) <= 10 and suffix[1:].isalnum():
+        return suffix
+    return ".audio"
+
+
+def decode_audio_bytes(audio_bytes: bytes, filename: str = "audio") -> np.ndarray:
     """Decode a browser/LiveTalking audio upload to mono float32 PCM at 16 kHz."""
-    completed = subprocess.run(
-        [
-            "ffmpeg", "-hide_banner", "-loglevel", "error", "-i", "pipe:0",
-            "-vn", "-ac", "1", "-ar", "16000", "-f", "f32le", "pipe:1",
-        ],
-        input=audio_bytes,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        check=False,
-    )
+    input_path = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            suffix=_safe_suffix(filename),
+            delete=False,
+        ) as temporary:
+            temporary.write(audio_bytes)
+            input_path = temporary.name
+        completed = subprocess.run(
+            [
+                "ffmpeg", "-hide_banner", "-loglevel", "error", "-i", input_path,
+                "-vn", "-ac", "1", "-ar", "16000", "-f", "f32le", "pipe:1",
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+    finally:
+        if input_path and os.path.exists(input_path):
+            os.unlink(input_path)
     if completed.returncode != 0 or not completed.stdout:
         detail = completed.stderr.decode("utf-8", errors="replace")[-600:]
         raise ValueError(f"无法解码上传的音频{': ' + detail if detail else ''}")
@@ -59,4 +79,3 @@ def extract_speech(
             chunks.append(gap)
         chunks.append(np.asarray(enhanced[start:end], dtype=np.float32))
     return np.concatenate(chunks) if chunks else np.empty(0, dtype=np.float32)
-

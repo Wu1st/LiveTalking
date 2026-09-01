@@ -149,7 +149,7 @@ class AcousticReportService:
             "不确定表述。若只有说话、旁白、合成语音等人声活动，只能描述存在交流、播放或"
             "语音相关活动，不得推断室内、室外或具体地点。只有直接室内/室外标签，或者至少"
             "两类语义一致且共同出现的非人声背景线索，才允许提出地点候选。"
-            "最多两句话；basis列出1到3条直接依据；uncertainty说明仍无法确定之处。"
+            "inference最多两句话；basis列出1到3条直接依据；uncertainty说明仍无法确定之处。"
             "只返回JSON对象："
             '{"inference_level":"none|coarse|specific","inference":"文字或空字符串",'
             '"basis":["依据"],"uncertainty":"不确定性"}。'
@@ -217,20 +217,14 @@ class AcousticReportService:
         names = [str(item.get("event") or "未知声音") for item in candidates[:3]]
         joined = "、".join(names)
         if scene_cues:
-            inference = f"当前声音可能来自{joined}，但具体地点仍需更多证据确认。"
+            inference = f"当前声音可能来自{joined}相关场景，但具体地点仍需更多证据确认。"
         elif meaningful:
-            inference = (
-                f"当前反复检测到{joined}，可能存在相关活动，"
-                "但现有声音还不足以确定具体场所。"
-            )
+            inference = f"检测到{joined}等稳定线索，可能存在相关活动，但暂时不能确定具体场所。"
         else:
             generic_names = "、".join(
                 str(item.get("event") or "声音") for item in observations[:2]
             )
-            inference = (
-                f"当前持续检测到{generic_names}，可能存在人声或一般环境活动，"
-                "但无法进一步判断具体场景。"
-            )
+            inference = f"目前只检测到{generic_names}，这些线索不足以判断具体环境场景。"
 
         basis_sources = candidates or observations
         basis = [
@@ -253,8 +247,14 @@ class AcousticReportService:
         transcript: str,
     ) -> dict[str, Any]:
         facts = list(evidence.get("facts") or [])
+        fact_labels = [
+            str(item.get("event") or "").strip()
+            for item in list(evidence.get("observations") or [])
+            if str(item.get("event") or "").strip()
+        ][:4]
         base = {
             "facts": facts,
+            "fact_labels": fact_labels,
             "can_infer": False,
             "inference_level": INFERENCE_LEVEL_NONE,
             "inference": FIXED_UNCERTAIN_TEXT,
@@ -276,6 +276,7 @@ class AcousticReportService:
                 guarded = self._rule_fallback(evidence)
                 guarded.update({
                     "facts": facts,
+                    "fact_labels": fact_labels,
                     "source": "rule_guardrail",
                     "model": self.model,
                     "elapsed": round(time.perf_counter() - started, 2),
@@ -285,6 +286,7 @@ class AcousticReportService:
                 fallback = self._rule_fallback(evidence)
                 fallback.update({
                     "facts": facts,
+                    "fact_labels": fact_labels,
                     "source": (
                         "ollama_uncertain"
                         if fallback["inference_level"] == INFERENCE_LEVEL_NONE
@@ -311,6 +313,7 @@ class AcousticReportService:
                 )
             result = {
                 "facts": facts,
+                "fact_labels": fact_labels,
                 "can_infer": True,
                 "inference_level": level,
                 "inference": inference[:320],
@@ -326,6 +329,7 @@ class AcousticReportService:
             fallback = self._rule_fallback(evidence)
             fallback.update({
                 "facts": facts,
+                "fact_labels": fact_labels,
                 "model": self.model,
                 "error": "LLM分析暂不可用，已返回规则结果",
             })
@@ -334,17 +338,15 @@ class AcousticReportService:
     @staticmethod
     def _with_display(result: dict[str, Any]) -> dict[str, Any]:
         facts = result.get("facts") or ["尚未形成稳定的声音事件观测。"]
-        fact_text = "\n".join(f"- {item}" for item in facts)
+        fact_text = "\n".join(str(fact).lstrip("- ").strip() for fact in facts)
         level = _normalize_level(result.get("inference_level"))
         result["inference_level"] = level
         result["inference_level_label"] = _LEVEL_LABELS[level]
+        inference = str(result.get("inference") or FIXED_UNCERTAIN_TEXT).strip()
         sections = [
             f"【声音事实】\n{fact_text}",
-            f"【场景推断·{_LEVEL_LABELS[level]}】\n{result['inference']}",
+            f"【场景推断 · {_LEVEL_LABELS[level]}】\n{inference}",
         ]
-        basis = result.get("basis") or []
-        if basis:
-            sections.append("【推断依据】\n" + "\n".join(f"- {item}" for item in basis))
         uncertainty = str(result.get("uncertainty") or "").strip()
         if uncertainty:
             sections.append(f"【不确定性】\n{uncertainty}")

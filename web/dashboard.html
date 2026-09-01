@@ -489,48 +489,115 @@ input[type=range] { accent-color:var(--primary); }
 .surface-hint { color:#919caf; font-size:11px; }
 
 /* 音频转写 */
-.transcribe-layout { display:flex; flex-direction:column; gap:14px; flex:1; }
-.transcribe-source-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-.source-card { min-height:290px; overflow:hidden; }
-.source-card-body { height:calc(100% - 58px); padding:20px; display:flex; flex-direction:column; }
+.transcribe-layout { display:flex; flex-direction:column; gap:12px; flex:1; }
+.transcribe-source-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.source-card { height:230px; min-height:230px; overflow:hidden; }
+.source-card .surface-head { min-height:48px; padding:0 16px; }
+.source-card-body { height:calc(100% - 48px); padding:14px 16px; display:flex; flex-direction:column; }
 .audio-dropzone {
-  flex:1; min-height:150px; display:flex; flex-direction:column; align-items:center; justify-content:center;
-  padding:20px; border:1.5px dashed #a9baf2; border-radius:15px; background:#fbfcff;
+  flex:1; min-height:92px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:10px 16px; border:1.5px dashed #a9baf2; border-radius:13px; background:#fbfcff;
   color:#6f7d96; text-align:center; cursor:pointer; transition:all .2s;
 }
 .audio-dropzone:hover,.audio-dropzone.dragging { border-color:var(--primary); background:#f3f6ff; box-shadow:inset 0 0 0 3px rgba(49,87,213,.04); }
 .dropzone-icon {
-  width:52px; height:52px; margin-bottom:11px; display:grid; place-items:center;
-  border-radius:15px; color:var(--primary); background:#eaf1ff; font-size:23px;
+  width:40px; height:40px; margin-bottom:6px; display:grid; place-items:center;
+  border-radius:12px; color:var(--primary); background:#eaf1ff; font-size:19px;
 }
 .audio-dropzone strong { color:#33405a; font-size:14px; font-weight:700; }
 .audio-dropzone span { margin-top:5px; color:#98a3b5; font-size:11px; }
-.audio-file-row { margin-top:12px; min-height:38px; display:flex; align-items:center; gap:10px; }
+.audio-file-row { margin-top:8px; min-height:34px; display:flex; align-items:center; gap:10px; }
 .audio-file-name { flex:1; min-width:0; color:#6b768b; font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .audio-file-name.ready { color:#34415a; }
 .audio-file-name i { margin-right:6px; color:var(--primary); }
-.environment-panel { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+.environment-panel {
+  flex:1; min-width:0; display:flex; flex-direction:row; align-items:center; justify-content:center;
+  gap:18px; padding:4px 6px; text-align:left;
+}
 .environment-orb {
-  width:86px; height:86px; margin-bottom:14px; display:grid; place-items:center;
+  width:62px; height:62px; flex:0 0 62px; display:grid; place-items:center;
   border:1px solid #dfe7fa; border-radius:50%; color:var(--primary); background:#f5f8ff;
-  font-size:31px; box-shadow:0 12px 30px rgba(49,87,213,.09); transition:all .25s;
+  font-size:24px; box-shadow:0 9px 24px rgba(49,87,213,.08); transition:all .25s;
 }
 .environment-orb.active { color:#fff; background:linear-gradient(145deg,var(--danger),#ef6f73); border-color:transparent; animation:pulse-ring 1.5s infinite; }
+.environment-copy { min-width:0; display:flex; flex-direction:column; align-items:flex-start; }
 .environment-panel strong { color:#33405a; font-size:14px; }
-.environment-panel p { max-width:380px; margin:6px 0 15px; color:#929dae; font-size:11px; line-height:1.6; }
-.environment-state { min-height:18px; margin-top:10px; display:flex; align-items:center; gap:7px; color:#8994a8; font-size:11px; }
+.environment-panel p { max-width:380px; margin:3px 0 8px; color:#929dae; font-size:11px; line-height:1.5; }
+.environment-controls { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.environment-state { min-height:16px; display:flex; align-items:center; gap:7px; color:#8994a8; font-size:11px; }
 .environment-dot { width:7px; height:7px; border-radius:50%; background:#bdc5d2; }
 .environment-dot.active { background:var(--success); animation:blink 1s infinite; }
 .environment-dot.speaking { background:var(--danger); box-shadow:0 0 0 4px rgba(229,72,77,.10); }
-.transcript-card { flex:1; min-height:270px; display:flex; flex-direction:column; overflow:hidden; }
+.transcript-card { flex:1 1 340px; height:auto; min-height:340px; display:flex; flex-direction:column; overflow:hidden; }
 .transcript-actions { display:flex; align-items:center; gap:7px; }
 .transcript-meta { color:#8d98aa; font-size:11px; }
+.speaker-count-badge {
+  display:inline-flex; align-items:center; min-height:24px; padding:2px 9px; border:1px solid #d9e3fb;
+  border-radius:999px; color:#4962a5; background:#f3f6ff; font-size:11px; font-weight:650;
+  white-space:nowrap;
+}
+.speaker-count-badge[hidden] { display:none; }
+.transcript-insight-grid { flex:1; min-height:0; overflow:hidden; display:grid; grid-template-columns:minmax(0,1.45fr) minmax(300px,.85fr); }
+.transcript-pane { min-width:0; min-height:0; overflow:hidden; display:flex; flex-direction:column; }
 .transcript-editor {
-  flex:1; min-height:210px; width:100%; padding:18px 20px; resize:vertical; border:0; outline:0;
+  flex:1; min-height:0; height:100%; width:100%; padding:18px 20px; resize:none; overflow:auto; border:0; outline:0;
   color:#263149; background:linear-gradient(180deg,#fff,#fcfdff); font-family:inherit;
   font-size:14px; line-height:1.85;
 }
 .transcript-editor::placeholder { color:#a9b2c1; }
+.acoustic-report-panel {
+  min-width:0; min-height:0; overflow:hidden; padding:16px 18px 18px; display:flex; flex-direction:column; gap:12px;
+  border-left:1px solid var(--border); background:linear-gradient(145deg,#fbfcff,#f7f9ff);
+}
+.acoustic-report-head { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.acoustic-report-title { display:flex; align-items:center; gap:8px; color:#33405a; font-size:13px; font-weight:750; }
+.acoustic-report-title i { color:var(--primary); font-size:16px; }
+.acoustic-report-status {
+  padding:4px 8px; border:1px solid #dbe4f7; border-radius:999px; color:#77849b;
+  background:#fff; font-size:10px; white-space:nowrap;
+}
+.acoustic-report-status.running { color:#3157d5; border-color:#cad7fa; background:#f1f5ff; }
+.acoustic-report-status.coarse { color:#9a6717; border-color:#f0d8a9; background:#fff9ec; }
+.acoustic-report-status.specific { color:#258460; border-color:#cfe9de; background:#f2fbf7; }
+.acoustic-report-status.error { color:#c94d54; border-color:#f1d0d2; background:#fff6f6; }
+.acoustic-report-body {
+  flex:1; min-height:0; padding:14px 15px; overflow:auto; border:1px solid #e1e7f2;
+  border-radius:12px; color:#44516a; background:rgba(255,255,255,.86); font-size:12px;
+  line-height:1.8; white-space:pre-wrap;
+}
+.acoustic-report-body.placeholder { color:#9aa5b6; }
+.acoustic-report-foot { color:#929dae; font-size:10px; line-height:1.55; }
+.conversation-analysis-card { overflow:hidden; }
+.conversation-analysis-actions { display:flex; align-items:center; gap:9px; }
+.conversation-analysis-status {
+  padding:4px 9px; border:1px solid #dbe4f7; border-radius:999px; color:#77849b;
+  background:#fff; font-size:10px; white-space:nowrap;
+}
+.conversation-analysis-status.running { color:#3157d5; border-color:#cad7fa; background:#f1f5ff; }
+.conversation-analysis-status.success { color:#258460; border-color:#cfe9de; background:#f2fbf7; }
+.conversation-analysis-status.error { color:#c94d54; border-color:#f1d0d2; background:#fff6f6; }
+.conversation-analysis-body { padding:18px 20px 20px; color:#3f4d66; }
+.conversation-analysis-body.placeholder { color:#929dae; font-size:12px; line-height:1.7; }
+.conversation-analysis-overview {
+  padding:14px 16px; border:1px solid #dde5f4; border-radius:12px; background:#f8faff;
+  font-size:13px; line-height:1.8; white-space:pre-wrap;
+}
+.conversation-analysis-meta { margin-top:8px; color:#8a96a9; font-size:10px; }
+.conversation-analysis-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:12px; }
+.conversation-analysis-block { min-width:0; padding:13px 15px; border:1px solid #e3e8f1; border-radius:12px; background:#fff; }
+.conversation-analysis-block.wide { grid-column:1/-1; }
+.conversation-analysis-block h4 { margin:0 0 8px; color:#33405a; font-size:12px; font-weight:750; }
+.conversation-analysis-list { margin:0; padding-left:19px; color:#536078; font-size:12px; line-height:1.75; }
+.conversation-analysis-list li + li { margin-top:5px; }
+.speaker-toggle { display:flex; align-items:center; gap:6px; color:#718099; font-size:11px; font-weight:550; }
+.speaker-toggle input { accent-color:var(--primary); }
+@media (max-width:1050px) {
+  .transcript-card { flex-basis:560px; height:auto; min-height:560px; }
+  .transcript-insight-grid { grid-template-columns:1fr; grid-template-rows:minmax(0,1fr) minmax(0,1fr); }
+  .acoustic-report-panel { border-left:0; border-top:1px solid var(--border); }
+  .conversation-analysis-grid { grid-template-columns:1fr; }
+  .conversation-analysis-block.wide { grid-column:auto; }
+}
 
 /* 监听模式 */
 .monitor-work-card { flex:1; min-height:560px; overflow:hidden; display:flex; flex-direction:column; }
@@ -820,26 +887,54 @@ input[type=range] { accent-color:var(--primary); }
                   <span class="dropzone-icon"><i class="bi bi-file-earmark-music"></i></span><strong>点击或拖拽音频文件到这里</strong><span>支持 WAV、MP3、M4A、AAC、FLAC、OGG、WebM 等格式</span>
                 </label>
                 <div class="audio-file-row"><div class="audio-file-name" id="audio-file-name"><i class="bi bi-paperclip"></i>尚未选择文件</div><button class="btn btn-primary" id="transcribe-upload-btn" type="button" disabled><i class="bi bi-magic"></i> 开始转写</button></div>
+                <label class="speaker-toggle" for="speaker-diarization-toggle"><input id="speaker-diarization-toggle" type="checkbox">启用说话人日志化（CAM++）</label>
               </div>
             </section>
             <section class="surface-card source-card">
               <div class="surface-head"><div class="surface-title"><i class="bi bi-broadcast"></i>环境音转写</div></div>
               <div class="source-card-body">
                 <div class="environment-panel">
-                  <div class="environment-orb" id="transcribe-env-orb"><i class="bi bi-mic"></i></div><strong>接收当前环境声音</strong>
-                  <p>开启后自动检测</p>
-                  <button class="btn btn-ghost" id="transcribe-env-toggle" type="button"><i class="bi bi-mic-fill"></i> 开始接收环境音</button>
-                  <div class="environment-state"><span class="environment-dot" id="transcribe-env-dot"></span><span id="transcribe-env-status">未开启</span></div>
+                  <div class="environment-orb" id="transcribe-env-orb"><i class="bi bi-mic"></i></div>
+                  <div class="environment-copy">
+                    <strong>接收当前环境声音</strong>
+                    <p>开启后自动检测</p>
+                    <div class="environment-controls">
+                      <button class="btn btn-ghost" id="transcribe-env-toggle" type="button"><i class="bi bi-mic-fill"></i> 开始接收环境音</button>
+                      <div class="environment-state"><span class="environment-dot" id="transcribe-env-dot"></span><span id="transcribe-env-status">未开启</span></div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </section>
           </div>
           <section class="surface-card transcript-card">
             <div class="surface-head">
-              <div class="surface-title"><i class="bi bi-pencil-square"></i>转写结果</div>
+              <div class="surface-title"><i class="bi bi-pencil-square"></i>转写结果 <span class="speaker-count-badge" id="transcript-speaker-count" hidden></span></div>
               <div class="transcript-actions"><span class="transcript-meta" id="transcript-meta">等待转写</span><button class="btn btn-ghost btn-sm" id="transcript-copy" type="button"><i class="bi bi-copy"></i> 复制</button><button class="btn btn-ghost btn-sm" id="transcript-clear" type="button"><i class="bi bi-trash3"></i> 清空</button></div>
             </div>
-            <textarea class="transcript-editor" id="transcript-result" placeholder="识别文字将在这里显示。您可以直接点击并进行人工编辑、补充或校对。"></textarea>
+            <div class="transcript-insight-grid">
+              <div class="transcript-pane">
+                <textarea class="transcript-editor" id="transcript-result" placeholder="识别文字将在这里显示。您可以直接点击并进行人工编辑、补充或校对。"></textarea>
+              </div>
+              <aside class="acoustic-report-panel" aria-label="环境分类与智能分析">
+                <div class="acoustic-report-head">
+                  <div class="acoustic-report-title"><i class="bi bi-soundwave"></i>环境分类与智能分析</div>
+                  <span class="acoustic-report-status" id="acoustic-report-status">等待分析</span>
+                </div>
+                <div class="acoustic-report-body placeholder" id="acoustic-report-result">接收音频后，将显示声音事实、场景推断与不确定性。</div>
+                <div class="acoustic-report-foot">基于 BEATs 多时间窗结果生成，仅供参考。</div>
+              </aside>
+            </div>
+          </section>
+          <section class="surface-card conversation-analysis-card" aria-label="对话理解与智能总结">
+            <div class="surface-head">
+              <div class="surface-title"><i class="bi bi-stars"></i>对话理解</div>
+              <div class="conversation-analysis-actions">
+                <span class="conversation-analysis-status" id="conversation-analysis-status">等待音频</span>
+                <button class="btn btn-primary btn-sm" id="conversation-analysis-btn" type="button" disabled><i class="bi bi-lightbulb"></i> 生成智能总结</button>
+              </div>
+            </div>
+            <div class="conversation-analysis-body placeholder" id="conversation-analysis-result">选择一段会议、访谈、聊天、讲解或其他对话音频后，可生成内容概览、关键观点、话题推进、说话人贡献、情绪与场景分析。</div>
           </section>
         </div>
       </section>
@@ -887,7 +982,7 @@ input[type=range] { accent-color:var(--primary); }
         <section class="surface-card monitor-work-card">
           <div class="surface-head"><div class="surface-title"><i class="bi bi-soundwave"></i>监听模式设置</div><span class="surface-hint">关键词触发 · 自动保存</span></div>
           <div class="monitor-pane">
-            <div class="monitor-toolbar"><input type="text" id="monitor-keywords" placeholder="关键词，使用逗号分隔，例如：你好，再见"><button class="btn btn-ghost btn-sm" id="monitor-toggle"><i class="bi bi-ear"></i> 开始监听</button><button class="btn btn-ghost btn-sm" id="monitor-clear"><i class="bi bi-trash3"></i> 清空</button></div>
+            <div class="monitor-toolbar"><input type="text" id="monitor-keywords" placeholder="关键词，使用逗号分隔，例如：你好，再见"><label class="speaker-toggle" for="monitor-speaker-diarization-toggle"><input id="monitor-speaker-diarization-toggle" type="checkbox">说话人日志化</label><button class="btn btn-ghost btn-sm" id="monitor-toggle"><i class="bi bi-ear"></i> 开始监听</button><button class="btn btn-ghost btn-sm" id="monitor-clear"><i class="bi bi-trash3"></i> 清空</button></div>
             <div class="monitor-savepath"><label for="monitor-savedir">保存路径</label><input type="text" id="monitor-savedir" placeholder="默认 ./monitor_clips"><label for="monitor-window">前后窗口</label><input type="number" id="monitor-window" value="60" min="10" max="600" style="text-align:center"><label>秒</label></div>
             <div class="monitor-statusbar"><div class="stat-item"><div class="mic-dot" id="mic-dot"></div><span id="mic-status">未开启</span></div><div class="stat-item"><i class="bi bi-file-earmark-text"></i><span id="monitor-count">0 条记录</span></div><div class="stat-item" id="beats-status"><i class="bi bi-soundwave"></i><span>环境识别未开启</span></div><div class="stat-item" id="kw-alert" style="display:none;color:var(--danger)"><i class="bi bi-flag-fill"></i><span id="kw-alert-text">检测到关键词，收集中…</span></div></div>
             <div class="monitor-scroll" id="monitor-scroll"><div style="color:var(--text-muted);font-size:12px;text-align:center;padding-top:32px"><i class="bi bi-soundwave" style="display:block;font-size:24px;margin-bottom:8px"></i>开启监听后，实时转写内容将显示在这里</div></div>
@@ -953,6 +1048,19 @@ function makeClientTraceId() {
     return window.crypto.randomUUID().replace(/-/g, '');
   }
   return 'client-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
+}
+
+function formatSpeakerDiarization(result, includeCount=true) {
+  const segments = result && result.speaker_segments || [];
+  if (!segments.length) return '未检测到带时间戳的说话片段。';
+  const count = result.speaker_count || result.speakers && result.speakers.length || 0;
+  const lines = segments.map(item => {
+    const start = Number(item.start || 0).toFixed(2);
+    const end = Number(item.end || 0).toFixed(2);
+    return '[' + start + 's - ' + end + 's] ' + item.speaker + ': ' + (item.text || '');
+  });
+  const transcript = lines.join('\n');
+  return includeCount ? '检测到 ' + count + ' 位说话人\n' + transcript : transcript;
 }
 
 function postClientMetric(stage, traceId, metrics) {
@@ -1044,6 +1152,9 @@ function uploadAudio(chunks, onDone, clientTiming) {
   fd.append('sessionid', sid());
   fd.append('client_trace_id', traceId);
   fd.append('client_mode', clientTiming.mode || 'unknown');
+  if (typeof clientTiming.speakerDiarization === 'boolean') {
+    fd.append('speaker_diarization', clientTiming.speakerDiarization ? '1' : '0');
+  }
   if (Number.isFinite(clientTiming.silenceWaitMs)) {
     fd.append('client_silence_wait_ms', String(clientTiming.silenceWaitMs));
   }
@@ -1064,6 +1175,9 @@ function uploadAudio(chunks, onDone, clientTiming) {
       });
       const text = (data.code === 0 && data.data && data.data.recognized)
         ? data.data.recognized : null;
+      if (data.code === 0 && data.data && data.data.speaker_diarization) {
+        addMsg(formatSpeakerDiarization(data.data.speaker_diarization), 'system');
+      }
       if (onDone) onDone(text);
     })
     .catch(error => {
@@ -1487,6 +1601,13 @@ $(document).ready(function () {
   let transcribeEnvActive=false, transcribeEnvStream=null, transcribeEnvAudioCtx=null;
   let transcribeEnvAnalyser=null, transcribeEnvInterval=null, transcribeEnvRecorder=null;
   let transcribeEnvSpeaking=false, transcribeEnvSilenceTimer=null, transcribeEnvFinalizing=false;
+  let transcribeAcousticRecorder=null, transcribeAcousticChunks=[], transcribeAcousticTimer=null;
+  let transcribeAcousticPending=false, acousticReportPending=false, lastAcousticReportRequestAt=0;
+  let acousticReportDirty=false, acousticReportTimer=null;
+  let conversationAnalysisPending=false;
+  const TRANSCRIBE_ACOUSTIC_SEGMENT_MS = 5000;
+  const ACOUSTIC_REPORT_MIN_INTERVAL_MS = 8000;
+  const transcriptionAnalysisSessionId = 'transcribe-' + makeClientTraceId();
 
   function readableFileSize(bytes) {
     if (bytes < 1024 * 1024) return Math.max(1, Math.round(bytes / 1024)) + ' KB';
@@ -1498,16 +1619,19 @@ $(document).ready(function () {
     if (!file) {
       $('#audio-file-name').removeClass('ready').html('<i class="bi bi-paperclip"></i>尚未选择文件');
       $('#transcribe-upload-btn').prop('disabled', true);
+      resetConversationAnalysis();
       return;
     }
     if (file.size > 80 * 1024 * 1024) {
       selectedAudioFile = null;
       $('#audio-file-name').removeClass('ready').html('<i class="bi bi-exclamation-circle"></i>文件超过 80 MB');
       $('#transcribe-upload-btn').prop('disabled', true);
+      resetConversationAnalysis();
       return;
     }
     $('#audio-file-name').addClass('ready').html('<i class="bi bi-file-earmark-music"></i>' + $('<div>').text(file.name).html() + ' · ' + readableFileSize(file.size));
     $('#transcribe-upload-btn').prop('disabled', false);
+    resetConversationAnalysis();
   }
 
   function appendTranscript(text, sourceLabel, details) {
@@ -1518,12 +1642,190 @@ $(document).ready(function () {
     $('#transcript-meta').text(sourceLabel + (details ? ' · ' + details : ''));
   }
 
-  function requestTranscription(file, sourceLabel, onFinished) {
+  function updateTranscriptSpeakerCount(result) {
+    const badge = $('#transcript-speaker-count');
+    const count = Number(result && (result.speaker_count || result.speakers && result.speakers.length) || 0);
+    if (count > 0) badge.text('检测到 ' + count + ' 位说话人').prop('hidden', false);
+    else badge.text('').prop('hidden', true);
+  }
+
+  function setAcousticReportStatus(text, state='') {
+    $('#acoustic-report-status').removeClass('running coarse specific error').addClass(state).text(text);
+  }
+
+  function updateAcousticReport(report, errorText='') {
+    if (report && report.display_text) {
+      $('#acoustic-report-result').removeClass('placeholder').text(report.display_text);
+      const suffix = report.window_count ? ' · ' + report.window_count + ' 个时间窗' : '';
+      const level = report.inference_level || (report.can_infer ? 'coarse' : 'none');
+      const labels = { none:'证据积累中', coarse:'粗略推断', specific:'较具体推断' };
+      setAcousticReportStatus((labels[level] || '已更新') + suffix, level === 'specific' ? 'specific' : (level === 'coarse' ? 'coarse' : ''));
+      return;
+    }
+    if (errorText) {
+      $('#acoustic-report-result').removeClass('placeholder').text('【声音事实】\n环境分类暂不可用。\n\n【场景推断 · 证据不足】\n当前声音证据不足，暂时无法判断具体环境场景。\n\n【不确定性】\n声音分析服务当前不可用。');
+      setAcousticReportStatus(errorText, 'error');
+    }
+  }
+
+  function resetAcousticContext() {
+    clearTimeout(acousticReportTimer);
+    acousticReportTimer = null;
+    acousticReportDirty = false;
+    lastAcousticReportRequestAt = 0;
+    $('#acoustic-report-result').addClass('placeholder').text('接收音频后，将显示声音事实、场景推断与不确定性。');
+    setAcousticReportStatus('等待分析');
+    fetch('/reset_acoustic_context', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body:JSON.stringify({ analysis_session_id:transcriptionAnalysisSessionId })
+    }).catch(() => {});
+  }
+
+  function setConversationAnalysisStatus(text, state='') {
+    $('#conversation-analysis-status').removeClass('running success error').addClass(state).text(text);
+  }
+
+  function resetConversationAnalysis() {
+    const available = !!selectedAudioFile;
+    $('#conversation-analysis-result')
+      .addClass('placeholder')
+      .text(available
+        ? '音频已就绪。点击“生成智能总结”，系统将综合转写、说话人、情绪和声音场景进行理解。'
+        : '选择一段会议、访谈、聊天、讲解或其他对话音频后，可生成内容概览、关键观点、话题推进、说话人贡献、情绪与场景分析。');
+    setConversationAnalysisStatus(available ? '可以生成' : '等待音频');
+    $('#conversation-analysis-btn').prop('disabled', !available || conversationAnalysisPending);
+  }
+
+  function conversationItemText(item) {
+    if (item === null || item === undefined) return '';
+    if (typeof item === 'string' || typeof item === 'number') return String(item);
+    if (Array.isArray(item)) return item.map(conversationItemText).filter(Boolean).join('；');
+    const prefix = item.time_label ? '[' + item.time_label + '] ' : '';
+    const speaker = item.display_name || item.speaker || '';
+    const body = item.narrative || item.contribution || item.text || item.point
+      || item.description || item.summary || item.decision || item.action
+      || item.question || item.relationship || item.title || item.label || '';
+    const inference = item.inference ? '（' + item.inference + '）' : '';
+    const confidence = Number.isFinite(Number(item.confidence))
+      ? '（' + Math.round(Number(item.confidence) * 100) + '%）' : '';
+    if (speaker && body) return prefix + speaker + '：' + body + inference + confidence;
+    if (body) return prefix + body + inference + confidence;
+    const primitives = Object.values(item).filter(value => typeof value === 'string' || typeof value === 'number');
+    return prefix + primitives.join(' · ');
+  }
+
+  function addConversationBlock(grid, title, items, wide=false) {
+    const values = (Array.isArray(items) ? items : [items]).map(conversationItemText).filter(Boolean);
+    if (!values.length) return;
+    const block = $('<section>').addClass('conversation-analysis-block' + (wide ? ' wide' : ''));
+    block.append($('<h4>').text(title));
+    const list = $('<ul>').addClass('conversation-analysis-list');
+    values.forEach(value => list.append($('<li>').text(value)));
+    block.append(list);
+    grid.append(block);
+  }
+
+  function renderConversationAnalysis(payload) {
+    const analysis = payload && payload.analysis || {};
+    const digest = analysis.content_digest || {};
+    const typeLabels = {
+      meeting:'会议', interview:'访谈', customer_service:'客服对话',
+      lecture:'讲解/演讲', daily_conversation:'日常对话', other:'其他对话'
+    };
+    const root = $('#conversation-analysis-result').removeClass('placeholder').empty();
+    const overview = digest.overview || analysis.summary || '已完成分析，但没有生成内容概览。';
+    root.append($('<div>').addClass('conversation-analysis-overview').text(overview));
+
+    const meta = [];
+    if (digest.content_type) meta.push('内容类型：' + (typeLabels[digest.content_type] || digest.content_type));
+    if (payload.model) meta.push('模型：' + payload.model);
+    if (payload.elapsed_seconds) meta.push('耗时：' + payload.elapsed_seconds + ' 秒');
+    if (meta.length) root.append($('<div>').addClass('conversation-analysis-meta').text(meta.join(' · ')));
+
+    const grid = $('<div>').addClass('conversation-analysis-grid');
+    addConversationBlock(grid, '关键观点', digest.key_points);
+    addConversationBlock(grid, '话题推进', digest.topic_progression, true);
+    addConversationBlock(grid, '说话人贡献', digest.speaker_contributions);
+
+    const emotion = analysis.emotion_analysis || {};
+    const emotionText = emotion.observed_label
+      ? emotion.observed_label + (Number.isFinite(Number(emotion.confidence))
+        ? '，置信度 ' + Math.round(Number(emotion.confidence) * 100) + '%' : '')
+      : '';
+    addConversationBlock(grid, '整体情绪', emotionText);
+
+    const scene = analysis.scene_analysis || {};
+    addConversationBlock(grid, '声音场景', scene.observed_events);
+    addConversationBlock(grid, '人物关系', analysis.relationships);
+
+    const outcomes = [];
+    (digest.decisions || []).forEach(item => outcomes.push('决定：' + conversationItemText(item)));
+    (digest.action_items || []).forEach(item => outcomes.push('待办：' + conversationItemText(item)));
+    (digest.open_questions || []).forEach(item => outcomes.push('待确认：' + conversationItemText(item)));
+    addConversationBlock(grid, '结论与后续事项', outcomes, true);
+    addConversationBlock(grid, '不确定信息', analysis.uncertainties, true);
+    if (grid.children().length) root.append(grid);
+  }
+
+  function requestAcousticReport(force=false) {
+    const now = Date.now();
+    if (acousticReportPending) {
+      acousticReportDirty = true;
+      return;
+    }
+    const remaining = ACOUSTIC_REPORT_MIN_INTERVAL_MS - (now - lastAcousticReportRequestAt);
+    if (!force && remaining > 0) {
+      clearTimeout(acousticReportTimer);
+      acousticReportTimer = setTimeout(() => {
+        acousticReportTimer = null;
+        requestAcousticReport(false);
+      }, remaining + 30);
+      return;
+    }
+    clearTimeout(acousticReportTimer);
+    acousticReportTimer = null;
+    acousticReportPending = true;
+    lastAcousticReportRequestAt = now;
+    setAcousticReportStatus('智能分析中…', 'running');
+    fetch('/acoustic_report', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body:JSON.stringify({
+        analysis_session_id:transcriptionAnalysisSessionId,
+        transcript:$('#transcript-result').val(),
+        force:!!force
+      })
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.code === 0 && data.data) updateAcousticReport(data.data);
+        else updateAcousticReport(null, (data && data.msg) || '分析失败');
+      })
+      .catch(() => updateAcousticReport(null, '请求失败'))
+      .finally(() => {
+        acousticReportPending = false;
+        if (acousticReportDirty) {
+          acousticReportDirty = false;
+          requestAcousticReport(false);
+        }
+      });
+  }
+
+  function requestTranscription(file, sourceLabel, onFinished, options={}) {
     const fd = new FormData();
     const traceId = makeClientTraceId();
     fd.append('file', file, file.name || 'environment.webm');
     fd.append('client_trace_id', traceId);
-    $('#transcript-meta').text(sourceLabel + ' · 正在识别…');
+    fd.append('analysis_session_id', transcriptionAnalysisSessionId);
+    fd.append('analyze_acoustic', options.analyzeAcoustic === false ? '0' : '1');
+    const diarizationEnabled = options.speakerDiarization === true
+      || (options.speakerDiarization !== false && $('#speaker-diarization-toggle').prop('checked'));
+    // 不发送关闭值，让服务端的全局 LIVETALKING_SPEAKER_DIARIZATION
+    // 配置仍然能够生效；只有页面显式开启时才覆盖全局默认值。
+    if (diarizationEnabled) fd.append('speaker_diarization', '1');
+    $('#transcript-meta').text(sourceLabel + (diarizationEnabled ? ' · 正在进行说话人日志化…' : ' · 正在识别…'));
+    if (options.analyzeAcoustic !== false) setAcousticReportStatus('声音分析中…', 'running');
     return fetch('/transcribe_audio', { method:'POST', body:fd })
       .then(r => r.json())
       .then(data => {
@@ -1533,7 +1835,16 @@ $(document).ready(function () {
         const info = [];
         if (data.data.duration) info.push('音频 ' + data.data.duration + 's');
         if (data.data.elapsed) info.push('耗时 ' + data.data.elapsed + 's');
-        appendTranscript(data.data.recognized, sourceLabel, info.join(' · '));
+        const diarization = data.data.speaker_diarization;
+        const useSpeakerLog = diarizationEnabled && diarization && diarization.speaker_segments;
+        const outputText = useSpeakerLog ? formatSpeakerDiarization(diarization, false) : data.data.recognized;
+        const outputLabel = useSpeakerLog ? sourceLabel + ' · 说话人日志' : sourceLabel;
+        updateTranscriptSpeakerCount(useSpeakerLog ? diarization : null);
+        if (diarizationEnabled && data.data.speaker_diarization_error)
+          info.push('说话人日志化不可用，已显示普通转写');
+        appendTranscript(outputText, outputLabel, info.join(' · '));
+        if (data.data.acoustic_error) updateAcousticReport(null, data.data.acoustic_error);
+        requestAcousticReport(options.analyzeAcoustic !== false);
       })
       .catch(err => {
         console.error(err);
@@ -1550,6 +1861,43 @@ $(document).ready(function () {
     requestTranscription(selectedAudioFile, selectedAudioFile.name, () => {
       button.prop('disabled', false).html('<i class="bi bi-magic"></i> 开始转写');
     });
+  });
+
+  $('#conversation-analysis-btn').click(function () {
+    if (!selectedAudioFile || conversationAnalysisPending) return;
+    const button = $(this);
+    conversationAnalysisPending = true;
+    button.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> 理解中');
+    setConversationAnalysisStatus('正在综合分析…', 'running');
+    $('#conversation-analysis-result').addClass('placeholder').text('正在进行语音转写、说话人区分、情绪识别、场景分析和内容理解，通常需要几十秒，请稍候…');
+
+    const fd = new FormData();
+    fd.append('file', selectedAudioFile, selectedAudioFile.name || 'conversation.audio');
+    fd.append('question', '理解这段对话，概括主要内容、关键观点、话题推进、说话人贡献、整体情绪和声音场景，并明确不确定信息。');
+    fd.append('tasks', 'digest,summary,qa,relationships,speakers,emotion,scene');
+    fd.append('content_type_hint', 'auto');
+
+    fetch('/api/content-analysis/audio', { method:'POST', body:fd })
+      .then(async response => {
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.status !== 'completed') {
+          throw new Error(data.detail || '对话分析失败');
+        }
+        return data;
+      })
+      .then(data => {
+        renderConversationAnalysis(data);
+        setConversationAnalysisStatus('分析完成', 'success');
+      })
+      .catch(error => {
+        console.error(error);
+        $('#conversation-analysis-result').addClass('placeholder').text('分析失败：' + error.message + '。您可以稍后重试，现有转写结果不会受影响。');
+        setConversationAnalysisStatus('分析失败', 'error');
+      })
+      .finally(() => {
+        conversationAnalysisPending = false;
+        button.prop('disabled', !selectedAudioFile).html('<i class="bi bi-lightbulb"></i> 重新生成');
+      });
   });
 
   const audioDropzone = document.getElementById('audio-dropzone');
@@ -1577,7 +1925,61 @@ $(document).ready(function () {
   });
   $('#transcript-clear').click(function () {
     $('#transcript-result').val(''); $('#transcript-meta').text('等待转写');
+    updateTranscriptSpeakerCount(null);
+    resetAcousticContext();
+    resetConversationAnalysis();
   });
+  $('#speaker-diarization-toggle').on('change', function () {
+    if (!this.checked) updateTranscriptSpeakerCount(null);
+  });
+
+  function uploadTranscribeAcoustic(blob) {
+    if (!transcribeEnvActive || transcribeAcousticPending || blob.size < 800) return;
+    transcribeAcousticPending = true;
+    setAcousticReportStatus('声音分析中…', 'running');
+    const fd = new FormData();
+    fd.append('file', blob, 'environment.webm');
+    fd.append('sessionid', sid() || '0');
+    fd.append('analysis_session_id', transcriptionAnalysisSessionId);
+    fd.append('context', 'transcribe');
+    fd.append('transcript', $('#transcript-result').val());
+    fetch('/analyze_environment', { method:'POST', body:fd })
+      .then(r => r.json())
+      .then(data => {
+        if (data.code === 0 && data.data) requestAcousticReport(false);
+        else updateAcousticReport(null, (data && data.msg) || '分析失败');
+      })
+      .catch(() => updateAcousticReport(null, '请求失败'))
+      .finally(() => { transcribeAcousticPending = false; });
+  }
+
+  function startTranscribeAcousticSegment() {
+    if (!transcribeEnvActive || !transcribeEnvStream) return;
+    transcribeAcousticChunks = [];
+    try {
+      transcribeAcousticRecorder = new MediaRecorder(transcribeEnvStream);
+      transcribeAcousticRecorder.ondataavailable = event => {
+        if (event.data.size > 0) transcribeAcousticChunks.push(event.data);
+      };
+      transcribeAcousticRecorder.onstop = () => {
+        clearTimeout(transcribeAcousticTimer);
+        const captured = transcribeAcousticChunks.slice();
+        transcribeAcousticRecorder = null;
+        if (transcribeEnvActive && captured.length) {
+          uploadTranscribeAcoustic(new Blob(captured, { type:'audio/webm' }));
+          setTimeout(startTranscribeAcousticSegment, 50);
+        }
+      };
+      transcribeAcousticRecorder.start(500);
+      transcribeAcousticTimer = setTimeout(() => {
+        if (transcribeAcousticRecorder && transcribeAcousticRecorder.state !== 'inactive')
+          transcribeAcousticRecorder.stop();
+      }, TRANSCRIBE_ACOUSTIC_SEGMENT_MS);
+    } catch (error) {
+      console.error(error);
+      updateAcousticReport(null, '录音启动失败');
+    }
+  }
 
   function setTranscribeEnvironmentState(state, text) {
     $('#transcribe-env-dot').removeClass('active speaking').addClass(state === 'active' ? 'active' : state === 'speaking' ? 'speaking' : '');
@@ -1596,6 +1998,7 @@ $(document).ready(function () {
       $('#transcribe-env-toggle').removeClass('btn-ghost').addClass('btn-danger').html('<i class="bi bi-stop-fill"></i> 停止接收');
       $('#transcribe-env-orb').addClass('active').html('<i class="bi bi-soundwave"></i>');
       setTranscribeEnvironmentState('active', '正在接收，等待说话…');
+      startTranscribeAcousticSegment();
 
       const buffer = new Float32Array(transcribeEnvAnalyser.fftSize);
       transcribeEnvInterval = setInterval(() => {
@@ -1615,7 +2018,7 @@ $(document).ready(function () {
               requestTranscription(blob, '环境音', () => {
                 if (transcribeEnvActive && !transcribeEnvSpeaking)
                   setTranscribeEnvironmentState('active', '正在接收，等待说话…');
-              });
+              }, { analyzeAcoustic:false });
             };
             transcribeEnvRecorder.start(100);
             setTranscribeEnvironmentState('speaking', '检测到声音，正在收录…');
@@ -1642,10 +2045,13 @@ $(document).ready(function () {
   function stopTranscribeEnvironment() {
     transcribeEnvActive = false;
     clearInterval(transcribeEnvInterval); clearTimeout(transcribeEnvSilenceTimer);
+    clearTimeout(transcribeAcousticTimer);
     if (transcribeEnvRecorder && transcribeEnvRecorder.state !== 'inactive') transcribeEnvRecorder.stop();
+    if (transcribeAcousticRecorder && transcribeAcousticRecorder.state !== 'inactive') transcribeAcousticRecorder.stop();
     if (transcribeEnvStream) transcribeEnvStream.getTracks().forEach(track => track.stop());
     if (transcribeEnvAudioCtx) transcribeEnvAudioCtx.close();
     transcribeEnvStream = transcribeEnvAudioCtx = transcribeEnvAnalyser = transcribeEnvRecorder = null;
+    transcribeAcousticRecorder = null; transcribeAcousticChunks = [];
     transcribeEnvSpeaking = transcribeEnvFinalizing = false;
     $('#transcribe-env-toggle').removeClass('btn-danger').addClass('btn-ghost').html('<i class="bi bi-mic-fill"></i> 开始接收环境音');
     $('#transcribe-env-orb').removeClass('active').html('<i class="bi bi-mic"></i>');
@@ -1867,12 +2273,26 @@ $(document).ready(function () {
     const fd = new FormData();
     fd.append('file', blob, 'audio.webm');
     fd.append('sessionid', sid());
+    if ($('#monitor-speaker-diarization-toggle').prop('checked')) {
+      fd.append('speaker_diarization', '1');
+    }
     fetch('/humanaudio_monitor', { method:'POST', body:fd })
       .then(r => r.json())
       .then(data => {
         if (data.code === 0 && data.data && data.data.recognized)
           addMonitorEntry(data.data.recognized);
+        if (data.code === 0 && data.data && data.data.speaker_diarization)
+          addMonitorSpeakerEntries(data.data.speaker_diarization);
       }).catch(() => {});
+  }
+
+  function addMonitorSpeakerEntries(result) {
+    const segments = result && result.speaker_segments || [];
+    segments.forEach(item => {
+      const start = Number(item.start || 0).toFixed(2);
+      const end = Number(item.end || 0).toFixed(2);
+      addMonitorEntry('[' + start + 's - ' + end + 's] ' + item.speaker + ': ' + (item.text || ''));
+    });
   }
 
   function startMonitor() {

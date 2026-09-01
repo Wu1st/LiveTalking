@@ -154,6 +154,11 @@ async def test_llm_level_guardrails_and_coarse_fallback():
     fallback = await service.generate(evidence, "")
     assert fallback["inference_level"] == "coarse"
     assert fallback["source"] == "rule_coarse_after_ollama_uncertain"
+    assert "【声音事实】" in fallback["display_text"]
+    assert "【场景推断 · 粗略推断】" in fallback["display_text"]
+    assert "【推断依据】" not in fallback["display_text"]
+    assert "【不确定性】" in fallback["display_text"]
+    assert "\n- " not in fallback["display_text"]
 
     service._infer = lambda current, transcript: {
         "inference_level": "specific",

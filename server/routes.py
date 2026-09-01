@@ -19,10 +19,18 @@ from utils.latency import (
     trace_from_id,
 )
 from server.beats_client import BEATS_CLIENT_KEY, beats_client_context
+from server.acoustic_context import (
+    ACOUSTIC_CONTEXT_KEY,
+    ACOUSTIC_REPORT_KEY,
+    AcousticContextManager,
+    AcousticReportService,
+)
 
 import tempfile
 import os
-import qwen3asr_service as asr_svc
+from server import asr_service as asr_svc
+from server import diarization_service as diarization_svc
+from server.content_analysis_proxy import analyze_conversation_audio
 
 
 # ─── 路由工具函数 ──────────────────────────────────────────────────────────
@@ -56,6 +64,7 @@ def get_session(request, sessionid: str):
 MAX_TRANSCRIBE_BYTES = 80 * 1024 * 1024
 MAX_TRANSLATION_CHARS = 20_000
 MAX_ACOUSTIC_BYTES = 25 * 1024 * 1024
+MAX_DIARIZATION_BYTES = diarization_svc.MAX_UPLOAD_BYTES
 
 
 def _uploaded_audio_suffix(filename: str) -> str:
@@ -200,6 +209,9 @@ async def humanaudio(request):
     """上传音频 → ASR识别 → LLM对话"""
     request_started = time.perf_counter()
     trace = None
+    speaker_diarization = None
+    speaker_diarization_error = None
+    diarization_task = None
     try:
         form = await request.post()
         form_received = time.perf_counter()
@@ -253,18 +265,28 @@ async def humanaudio(request):
             t1 = time.perf_counter()
 
             loop = asyncio.get_running_loop()
-            recognized_text = await loop.run_in_executor(
-                None, asr_svc.transcribe, tmp_path
-            )
-            t2 = time.perf_counter()
+            diarization_task = _start_diarization(form, tmp_path)
+            try:
+                # Both requests use the same normalized WAV. Waiting for the
+                # optional task before cleanup guarantees the worker never
+                # observes a deleted temporary file.
+                recognized_text = await loop.run_in_executor(
+                    None, asr_svc.transcribe, tmp_path
+                )
+                t2 = time.perf_counter()
 
-            result = subprocess.run(
-                ['ffprobe', '-v', 'quiet', '-print_format', 'json',
-                 '-show_streams', tmp_path],
-                capture_output=True, text=True
-            )
-            dur = float(json.loads(result.stdout)['streams'][0]['duration'])
-
+                result = subprocess.run(
+                    ['ffprobe', '-v', 'quiet', '-print_format', 'json',
+                     '-show_streams', tmp_path],
+                    capture_output=True, text=True
+                )
+                dur = float(json.loads(result.stdout)['streams'][0]['duration'])
+            finally:
+                speaker_diarization, speaker_diarization_error = await _await_diarization(
+                    diarization_task,
+                    trace,
+                    "humanaudio",
+                )
         finally:
             os.unlink(raw_path)
             if os.path.exists(tmp_path):
@@ -287,6 +309,9 @@ async def humanaudio(request):
             emit_latency("audio_chat_error", trace, error="empty ASR result")
             return json_error("ASR 识别结果为空")
 
+        if speaker_diarization is not None:
+            datainfo["speaker_diarization"] = speaker_diarization
+
         # 走 LLM 流程（与 human 路由的 chat 模式完全一致）
         llm_response = request.app.get("llm_response")
         if llm_response:
@@ -297,7 +322,15 @@ async def humanaudio(request):
             )
 
         emit_latency("audio_chat_accepted", trace)
-        return json_ok({"recognized": recognized_text, "trace_id": trace["trace_id"]})
+        response_data = {
+            "recognized": recognized_text,
+            "trace_id": trace["trace_id"],
+        }
+        if speaker_diarization is not None:
+            response_data["speaker_diarization"] = speaker_diarization
+        if speaker_diarization_error:
+            response_data["speaker_diarization_error"] = speaker_diarization_error
+        return json_ok(response_data)
 
     except Exception as e:
         emit_latency("audio_chat_error", trace, error=repr(e))
@@ -308,6 +341,9 @@ async def humanaudio_monitor(request):
     """监听模式：只做 ASR 转写，不触发 LLM"""
     request_started = time.perf_counter()
     trace = None
+    speaker_diarization = None
+    speaker_diarization_error = None
+    diarization_task = None
     try:
         form = await request.post()
         form_received = time.perf_counter()
@@ -348,11 +384,19 @@ async def humanaudio_monitor(request):
 
         try:
             loop = asyncio.get_event_loop()
-            recognized_text = await loop.run_in_executor(
-                None, asr_svc.transcribe, tmp_path
-            )
-            asr_finished = time.perf_counter()
-            duration = _probe_audio_duration(tmp_path)
+            diarization_task = _start_diarization(form, tmp_path)
+            try:
+                recognized_text = await loop.run_in_executor(
+                    None, asr_svc.transcribe, tmp_path
+                )
+                asr_finished = time.perf_counter()
+                duration = _probe_audio_duration(tmp_path)
+            finally:
+                speaker_diarization, speaker_diarization_error = await _await_diarization(
+                    diarization_task,
+                    trace,
+                    "humanaudio_monitor",
+                )
         finally:
             if os.path.exists(tmp_path):
                 os.unlink(tmp_path)
@@ -368,7 +412,15 @@ async def humanaudio_monitor(request):
             rtf=((asr_finished - converted_at) / duration) if duration else None,
             recognized_chars=len(recognized_text or ""),
         )
-        return json_ok({"recognized": recognized_text, "trace_id": trace["trace_id"]})
+        response_data = {
+            "recognized": recognized_text,
+            "trace_id": trace["trace_id"],
+        }
+        if speaker_diarization is not None:
+            response_data["speaker_diarization"] = speaker_diarization
+        if speaker_diarization_error:
+            response_data["speaker_diarization_error"] = speaker_diarization_error
+        return json_ok(response_data)
 
     except Exception as e:
         emit_latency("audio_monitor_error", trace, error=repr(e))
@@ -388,8 +440,99 @@ async def beats_health(request):
         return json_error("BEATs服务暂不可用")
 
 
+async def asr_health(request):
+    """Expose the selected ASR backend and optional WhisperX status."""
+    try:
+        loop = asyncio.get_running_loop()
+        status = await loop.run_in_executor(None, asr_svc.health)
+        return json_ok(status)
+    except Exception as exc:
+        logger.warning("ASR health check failed: %s", exc)
+        return json_error("ASR服务暂不可用")
+
+
+async def diarization_health(request):
+    """Expose the in-process FunASR speaker-diarization health.
+
+    Args:
+        request: Current aiohttp request. It is used only to keep the route
+            signature consistent with the other health handlers.
+
+    Returns:
+        A JSON response containing local model configuration and health state.
+    """
+    try:
+        return json_ok(diarization_svc.health())
+    except Exception as exc:
+        logger.warning("Speaker diarization health check failed: %s", exc)
+        return json_error("说话人日志化服务暂不可用")
+
+
+def _start_diarization(form, audio_path: str, force: bool = False):
+    """Start optional diarization while the primary ASR runs.
+
+    Args:
+        form: Parsed multipart form from an audio request.
+        audio_path: Converted WAV path shared with the diarization worker.
+        force: Start the task even when the request has no opt-in form field.
+
+    Returns:
+        An asyncio task, or None when diarization was not requested.
+    """
+    if not force and not diarization_svc.requested(form.get("speaker_diarization")):
+        return None
+    language = str(form.get("language") or diarization_svc.LANGUAGE).strip()
+    return asyncio.create_task(
+        asyncio.to_thread(
+            diarization_svc.diarize,
+            audio_path,
+            language or "auto",
+        )
+    )
+
+
+async def _await_diarization(task, trace, source: str):
+    """Resolve optional diarization without failing the ASR request.
+
+    Args:
+        task: Task returned by `_start_diarization`.
+        trace: Latency trace for the current request.
+        source: Route name used in logs and metrics.
+
+    Returns:
+        A tuple `(result, error_message)`. Both are None when disabled.
+    """
+    if task is None:
+        return None, None
+    try:
+        result = await task
+        emit_latency(
+            "speaker_diarization_final",
+            trace,
+            source=source,
+            speaker_count=result.get("speaker_count", 0),
+            segment_count=len(result.get("speaker_segments") or []),
+        )
+        logger.info(
+            "Speaker diarization source=%s speakers=%s segments=%s",
+            source,
+            result.get("speakers") or [],
+            result.get("speaker_segments") or [],
+        )
+        return result, None
+    except Exception as exc:
+        logger.warning("Speaker diarization failed source=%s: %s", source, exc)
+        emit_latency(
+            "speaker_diarization_error",
+            trace,
+            source=source,
+            error=repr(exc),
+        )
+        return None, "说话人日志化暂不可用"
+
+
 async def analyze_environment(request):
-    """Analyze a continuous environment-audio window without invoking ASR/LLM/TTS."""
+    """Analyze an environment window and optionally update transcription context."""
     request_started = time.perf_counter()
     trace = None
     try:
@@ -405,6 +548,9 @@ async def analyze_environment(request):
             return json_error("环境音频文件不能超过 25 MB")
 
         sessionid = str(form.get("sessionid", "0"))
+        analysis_session_id = str(
+            form.get("analysis_session_id") or sessionid or "transcribe-default"
+        )[:128]
         trace = new_trace(
             sessionid,
             "beats_environment",
@@ -421,6 +567,12 @@ async def analyze_environment(request):
             filename=filename,
             content_type=content_type,
         )
+        context_manager = request.app.get(ACOUSTIC_CONTEXT_KEY)
+        if context_manager is not None:
+            context_manager.add_window(analysis_session_id, result)
+            transcript = str(form.get("transcript", "")).strip()
+            if transcript:
+                context_manager.set_transcript(analysis_session_id, transcript)
         elapsed_ms = (time.perf_counter() - request_started) * 1000
         logger.info(
             "BEATs environment | session=%s | text=%s | decode_ms=%s | inference_ms=%s | total_ms=%.2f",
@@ -448,9 +600,13 @@ async def analyze_environment(request):
 
 
 async def transcribe_audio(request):
-    """音频转写工作台：接收上传文件或浏览器录音，仅返回可编辑的 ASR 文字。"""
+    """Audio transcription plus optional concurrent acoustic-context analysis."""
     raw_path = None
     wav_path = None
+    beats_task = None
+    diarization_task = None
+    speaker_diarization = None
+    speaker_diarization_error = None
     request_started = time.perf_counter()
     trace = None
     try:
@@ -478,9 +634,27 @@ async def transcribe_audio(request):
         if not filebytes:
             return json_error("上传的音频文件为空")
         if len(filebytes) > MAX_TRANSCRIBE_BYTES:
-            return json_error("音频文件不能超过 80 MB")
+            return json_error(
+                f"音频文件不能超过 {MAX_TRANSCRIBE_BYTES // (1024 * 1024)} MB"
+            )
 
         filename = Path(getattr(fileobj, "filename", "audio") or "audio").name
+        analysis_session_id = str(
+            form.get("analysis_session_id") or "transcribe-default"
+        )[:128]
+        analyze_acoustic = str(form.get("analyze_acoustic", "1")).lower() not in {
+            "0", "false", "no",
+        }
+        beats_client = request.app.get(BEATS_CLIENT_KEY)
+        if analyze_acoustic and beats_client is not None:
+            beats_task = asyncio.create_task(
+                beats_client.analyze(
+                    filebytes,
+                    filename=filename,
+                    content_type=getattr(fileobj, "content_type", None)
+                    or "application/octet-stream",
+                )
+            )
         suffix = _uploaded_audio_suffix(filename)
         with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as raw_file:
             raw_file.write(filebytes)
@@ -493,8 +667,22 @@ async def transcribe_audio(request):
         _convert_audio_to_wav(raw_path, wav_path)
         converted_at = time.perf_counter()
         duration = _probe_audio_duration(wav_path)
-        recognized_text = await loop.run_in_executor(None, asr_svc.transcribe, wav_path)
-        finished_at = time.perf_counter()
+        diarization_task = _start_diarization(form, wav_path)
+        try:
+            # Start both jobs from the same normalized WAV. The outer
+            # finally block only removes the file after this task is drained.
+            recognized_text = await loop.run_in_executor(
+                None,
+                asr_svc.transcribe,
+                wav_path,
+            )
+            finished_at = time.perf_counter()
+        finally:
+            speaker_diarization, speaker_diarization_error = await _await_diarization(
+                diarization_task,
+                trace,
+                "transcribe_audio",
+            )
 
         logger.info(
             "Audio transcription filename=%s size=%d duration=%s ffmpeg=%.3fs ASR=%.3fs",
@@ -518,13 +706,35 @@ async def transcribe_audio(request):
         if not recognized_text:
             return json_error("ASR 识别结果为空")
 
-        return json_ok({
+        context_manager = request.app.get(ACOUSTIC_CONTEXT_KEY)
+        acoustic_result = None
+        acoustic_error = None
+        if context_manager is not None:
+            context_manager.add_transcript(analysis_session_id, recognized_text)
+        if beats_task is not None:
+            try:
+                acoustic_result = await beats_task
+                if context_manager is not None:
+                    context_manager.add_window(analysis_session_id, acoustic_result)
+            except Exception as exc:
+                acoustic_error = "环境声音分析暂不可用"
+                logger.warning("Transcription acoustic analysis failed: %s", exc)
+        response_data = {
             "recognized": recognized_text,
             "filename": filename,
             "duration": duration,
             "elapsed": round(finished_at - started_at, 2),
             "trace_id": trace["trace_id"],
-        })
+            "analysis_session_id": analysis_session_id,
+            "acoustic": acoustic_result,
+        }
+        if acoustic_error:
+            response_data["acoustic_error"] = acoustic_error
+        if speaker_diarization is not None:
+            response_data["speaker_diarization"] = speaker_diarization
+        if speaker_diarization_error:
+            response_data["speaker_diarization_error"] = speaker_diarization_error
+        return json_ok(response_data)
     except ValueError as e:
         emit_latency("audio_transcribe_error", trace, error=repr(e))
         return json_error(str(e))
@@ -533,9 +743,197 @@ async def transcribe_audio(request):
         logger.exception('transcribe_audio exception:')
         return json_error(str(e))
     finally:
+        if beats_task is not None and not beats_task.done():
+            beats_task.cancel()
+        if diarization_task is not None and not diarization_task.done():
+            diarization_task.cancel()
         for path in (raw_path, wav_path):
             if path and os.path.exists(path):
                 os.unlink(path)
+
+
+async def diarize_audio(request):
+    """Run standalone speaker diarization without invoking the primary ASR.
+
+    Args:
+        request: Multipart request containing `file`; optional `language`
+            selects the SenseVoice language hint.
+
+    Returns:
+        A JSON response with anonymous speakers, sentence segments, and merged
+        `speaker_segments` intervals.
+    """
+    raw_path = None
+    wav_path = None
+    request_started = time.perf_counter()
+    trace = None
+    try:
+        form = await request.post()
+        trace = new_trace(
+            "diarize",
+            "speaker_diarization",
+            started_monotonic=request_started,
+            trace_id=str(form.get("client_trace_id") or "") or None,
+        )
+        fileobj = form.get("file")
+        if fileobj is None or not hasattr(fileobj, "file"):
+            return json_error("请选择需要日志化的音频文件")
+
+        filebytes = fileobj.file.read()
+        if not filebytes:
+            return json_error("上传的音频文件为空")
+        if len(filebytes) > MAX_DIARIZATION_BYTES:
+            return json_error(
+                f"音频文件不能超过 {MAX_DIARIZATION_BYTES // (1024 * 1024)} MB"
+            )
+
+        filename = Path(getattr(fileobj, "filename", "audio") or "audio").name
+        suffix = _uploaded_audio_suffix(filename)
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as raw_file:
+            raw_file.write(filebytes)
+            raw_path = raw_file.name
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as wav_file:
+            wav_path = wav_file.name
+
+        _convert_audio_to_wav(raw_path, wav_path)
+        task = _start_diarization(form, wav_path, force=True)
+        result, error = await _await_diarization(task, trace, "diarize_audio")
+        if error or result is None:
+            return json_error(error or "说话人日志化暂不可用")
+        result["filename"] = filename
+        result["duration"] = _probe_audio_duration(wav_path)
+        return json_ok(result)
+    except ValueError as exc:
+        emit_latency("speaker_diarization_error", trace, error=repr(exc))
+        return json_error(str(exc))
+    except Exception as exc:
+        emit_latency("speaker_diarization_error", trace, error=repr(exc))
+        logger.exception("Standalone speaker diarization failed")
+        return json_error(str(exc))
+    finally:
+        for path in (raw_path, wav_path):
+            if path and os.path.exists(path):
+                os.unlink(path)
+
+
+async def reset_acoustic_context(request):
+    """Clear one browser's rolling acoustic windows and transcript context."""
+    try:
+        params = await request.json()
+        analysis_session_id = str(
+            params.get("analysis_session_id") or "transcribe-default"
+        )[:128]
+        manager = request.app.get(ACOUSTIC_CONTEXT_KEY)
+        if manager is not None:
+            manager.reset(analysis_session_id)
+        return json_ok({"analysis_session_id": analysis_session_id})
+    except Exception as exc:
+        logger.warning("Unable to reset acoustic context: %s", exc)
+        return json_error("清空环境分析上下文失败")
+
+
+async def diarize_api(request):
+    """Expose in-process speaker diarization as a direct remote API.
+
+    Args:
+        request: Multipart request containing ``file`` and optional
+            ``language``. Authentication is checked with ``FUNASR_API_KEY``.
+
+    Returns:
+        A direct JSON response containing ``speaker_count``, anonymous
+        speakers, transcript segments, and merged speaker intervals.
+    """
+    if not diarization_svc.authorize_request(request):
+        return web.json_response(
+            {"detail": "缺少或无效的 FunASR API Key"},
+            status=401,
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    raw_path = None
+    wav_path = None
+    try:
+        form = await request.post()
+        fileobj = form.get("file")
+        if fileobj is None or not hasattr(fileobj, "file"):
+            return web.json_response({"detail": "缺少音频文件"}, status=400)
+
+        filebytes = fileobj.file.read()
+        if not filebytes:
+            return web.json_response({"detail": "上传的音频文件为空"}, status=400)
+        if len(filebytes) > MAX_DIARIZATION_BYTES:
+            return web.json_response(
+                {
+                    "detail": (
+                        "音频文件不能超过 "
+                        f"{MAX_DIARIZATION_BYTES // (1024 * 1024)} MB"
+                    )
+                },
+                status=413,
+            )
+
+        filename = Path(getattr(fileobj, "filename", "audio") or "audio").name
+        suffix = _uploaded_audio_suffix(filename)
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as raw_file:
+            raw_file.write(filebytes)
+            raw_path = raw_file.name
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as wav_file:
+            wav_path = wav_file.name
+
+        _convert_audio_to_wav(raw_path, wav_path)
+        language = str(
+            form.get("language") or diarization_svc.LANGUAGE
+        ).strip() or "auto"
+        loop = asyncio.get_running_loop()
+        result = await loop.run_in_executor(
+            None,
+            diarization_svc.diarize,
+            wav_path,
+            language,
+        )
+        result = dict(result)
+        result["filename"] = filename
+        result["duration"] = _probe_audio_duration(wav_path)
+        return web.json_response(result)
+    except ValueError as exc:
+        return web.json_response({"detail": str(exc)}, status=422)
+    except Exception as exc:
+        logger.exception("Direct speaker diarization API failed")
+        return web.json_response(
+            {"detail": f"说话人日志化失败：{exc}"},
+            status=500,
+        )
+    finally:
+        for path in (raw_path, wav_path):
+            if path and os.path.exists(path):
+                os.unlink(path)
+
+
+async def acoustic_report(request):
+    """Generate the LLM report separately so ASR and BEATs responses stay fast."""
+    try:
+        params = await request.json()
+        analysis_session_id = str(
+            params.get("analysis_session_id") or "transcribe-default"
+        )[:128]
+        manager = request.app.get(ACOUSTIC_CONTEXT_KEY)
+        service = request.app.get(ACOUSTIC_REPORT_KEY)
+        if manager is None or service is None:
+            return json_error("环境分析服务未初始化")
+        if "transcript" in params:
+            manager.set_transcript(
+                analysis_session_id,
+                str(params.get("transcript") or ""),
+            )
+        report = await manager.report(
+            analysis_session_id,
+            service,
+            force=bool(params.get("force", False)),
+        )
+        return json_ok(report)
+    except Exception as exc:
+        logger.exception("Acoustic report generation failed")
+        return json_error(f"环境智能分析失败：{exc}")
 
 
 async def translate_text(request):
@@ -736,13 +1134,23 @@ async def is_speaking(request):
 
 def setup_routes(app):
     """注册所有路由到 aiohttp app"""
+    app[ACOUSTIC_CONTEXT_KEY] = AcousticContextManager()
+    app[ACOUSTIC_REPORT_KEY] = AcousticReportService()
     app.cleanup_ctx.append(beats_client_context)
     app.router.add_post("/human", human)
     app.router.add_post("/humanaudio", humanaudio)
     app.router.add_post("/humanaudio_monitor", humanaudio_monitor)
     app.router.add_get("/api/beats/health", beats_health)
+    app.router.add_get("/api/asr/health", asr_health)
+    app.router.add_get("/api/diarization/health", diarization_health)
+    app.router.add_get("/health", diarization_health)
     app.router.add_post("/analyze_environment", analyze_environment)
+    app.router.add_post("/acoustic_report", acoustic_report)
+    app.router.add_post("/reset_acoustic_context", reset_acoustic_context)
     app.router.add_post("/transcribe_audio", transcribe_audio)
+    app.router.add_post("/api/content-analysis/audio", analyze_conversation_audio)
+    app.router.add_post("/diarize_audio", diarize_audio)
+    app.router.add_post("/v1/diarize", diarize_api)
     app.router.add_post("/translate_text", translate_text)
     app.router.add_post("/api/metrics/client", client_metrics)
     app.router.add_post("/save_monitor_clip", save_monitor_clip)

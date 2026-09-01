@@ -67,6 +67,36 @@ python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1
 export HF_ENDPOINT=https://hf-mirror.com
 ``` 
 
+### WhisperX ASR 部署
+
+本项目提供独立的 WhisperX sidecar，支持批量转写、词级对齐和可选的说话人分离。部署和参数说明见 [WhisperX 部署](docs/whisperx.md)。
+
+快速启动：
+
+```bash
+cd services/whisperx_api
+bash run.sh
+
+export LIVETALKING_ASR_BACKEND=whisperx
+export WHISPERX_URL=http://127.0.0.1:8093
+cd ../..
+python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1
+```
+
+### 说话人日志化 API
+
+本项目在现有 LiveTalking 容器和 `8010` 端口内运行 FunASR + SenseVoiceSmall + FSMN-VAD + CAM++，无需启动新的 Docker 容器。接口可检测音频中的说话人数，并输出 `Speaker_00`、`Speaker_01` 等匿名标签及发言时间段。详细部署与 API 示例见 [说话人日志化 API](docs/speaker_diarization.md)。
+
+在原 LiveTalking 容器内安装依赖并启动：
+
+```bash
+cd /home/hf/qwen3-asr/LiveTalking
+pip install -r requirements.txt
+export FUNASR_API_KEY="$(openssl rand -hex 32)"
+export LIVETALKING_SPEAKER_DIARIZATION=1
+python app.py --transport webrtc --model wav2lip --avatar_id wav2lip256_avatar1
+```
+
 ## 3. Architecture
 ### 数据流程图
 <img src="./assets/dataflow.png" align="middle" />  

@@ -1,0 +1,47 @@
+services:
+  whisperx:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: livetalking-whisperx:3.8.6
+    restart: unless-stopped
+    ports:
+      - "${WHISPERX_PORT:-8093}:8093"
+    ipc: host
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import urllib.request;
+          urllib.request.urlopen("http://127.0.0.1:8093/health", timeout=5)
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 300s
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities:
+                - gpu
+    environment:
+      WHISPERX_DEVICE: "${WHISPERX_DEVICE:-cuda}"
+      WHISPERX_DEVICE_INDEX: "${WHISPERX_DEVICE_INDEX:-0}"
+      WHISPERX_MODEL: "${WHISPERX_MODEL:-large-v3}"
+      WHISPERX_COMPUTE_TYPE: "${WHISPERX_COMPUTE_TYPE:-float16}"
+      WHISPERX_BATCH_SIZE: "${WHISPERX_BATCH_SIZE:-4}"
+      WHISPERX_MAX_UPLOAD_MB: "${WHISPERX_MAX_UPLOAD_MB:-500}"
+      HF_TOKEN: "${HF_TOKEN:-}"
+      HF_HOME: /models/huggingface
+      TORCH_HOME: /models/torch
+      XDG_CACHE_HOME: /models/cache
+      NLTK_DATA: /models/nltk
+    volumes:
+      - whisperx-models:/models
+
+volumes:
+  whisperx-models:

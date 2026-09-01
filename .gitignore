@@ -21,3 +21,6 @@ models/
 latency_metrics.jsonl*
 latency_report.txt
 dist
+
+# Local WhisperX cache/config files should not enter the repository.
+.env

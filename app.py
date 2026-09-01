@@ -58,7 +58,8 @@ import gc
 import os
 import time
 
-import qwen3asr_service as asr_svc
+from server import asr_service as asr_svc
+from server import diarization_service as diarization_svc
 from utils.runtime_snapshot import log_runtime_ready, log_runtime_snapshot
 
 app = Flask(__name__)
@@ -111,6 +112,7 @@ async def on_shutdown(app):
     if stop_event is not None:
         stop_event.set()
 
+    diarization_svc.shutdown()
     await rtc_manager.shutdown()
 
 
@@ -306,10 +308,13 @@ def main():
         pagename='rtmpapi.html'
     elif opt.transport=='rtcpush':
         pagename='rtcpushapi.html'
-    logger.info("预加载 Qwen3-ASR 模型...")
-    import qwen3asr_service as asr_svc
-    asr_svc.get_model()
-    logger.info("Qwen3-ASR 模型加载完成")
+    logger.info("预加载 ASR 后端：%s", asr_svc.BACKEND)
+    asr_svc.preload()
+    logger.info("ASR 后端初始化完成：%s", asr_svc.health())
+    if diarization_svc.PRELOAD_ENABLED:
+        logger.info("预加载 FunASR 说话人日志化模型")
+        diarization_svc.preload()
+    logger.info("说话人日志化 API：%s", diarization_svc.health())
     # opt has already been initialized by parse_args() at this point.
     preload_cosyvoice_speaker(opt)
     appasync["ollama_keeper_stop"] = start_ollama_model_keeper(

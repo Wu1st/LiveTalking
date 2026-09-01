@@ -1,0 +1,23 @@
+[Unit]
+Description=GPU emotion2vec API
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/hf/qwen3-asr/LiveTalking/services/emotion_api
+Environment=PYTHONUNBUFFERED=1
+Environment=EMOTION_DEVICE=cuda:0
+Environment=EMOTION_MODEL_PATH=/home/hf/.cache/modelscope/hub/models/iic/emotion2vec_plus_base
+Environment=EMOTION_FFMPEG=/home/hf/.conda/envs/emotion-api/bin/ffmpeg
+Environment=OMP_NUM_THREADS=4
+Environment=MKL_NUM_THREADS=4
+ExecStart=/home/hf/.conda/envs/emotion-api/bin/python -m uvicorn app:app --host 127.0.0.1 --port 18080 --workers 1
+Restart=always
+RestartSec=3
+TimeoutStartSec=120
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=default.target

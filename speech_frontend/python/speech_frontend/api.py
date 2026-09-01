@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import logging
 import uuid
 from typing import Any
 
@@ -17,6 +18,7 @@ MAX_UPLOAD_BYTES = 80 * 1024 * 1024
 MAX_AUDIO_SECONDS = 30 * 60
 ENGINE_KEY: web.AppKey[SpeechFrontendEngine] = web.AppKey("engine", SpeechFrontendEngine)
 SEMAPHORE_KEY: web.AppKey[asyncio.Semaphore] = web.AppKey("semaphore", asyncio.Semaphore)
+logger = logging.getLogger(__name__)
 
 
 def json_ok(data: dict | None = None) -> web.Response:
@@ -26,9 +28,10 @@ def json_ok(data: dict | None = None) -> web.Response:
     return web.json_response(body, dumps=lambda value: json.dumps(value, ensure_ascii=False))
 
 
-def json_error(message: str, code: int = -1) -> web.Response:
+def json_error(message: str, code: int = -1, status: int = 422) -> web.Response:
     return web.json_response(
         {"code": code, "msg": str(message)},
+        status=status,
         dumps=lambda value: json.dumps(value, ensure_ascii=False),
     )
 
@@ -42,8 +45,11 @@ async def error_middleware(request: web.Request, handler):
             response = await handler(request)
         except web.HTTPException:
             raise
+        except ValueError as error:
+            response = json_error(str(error), status=422)
         except Exception as error:
-            response = json_error(str(error))
+            logger.exception("Speech frontend request failed")
+            response = json_error("语音前端处理失败", status=500)
     response.headers["Access-Control-Allow-Origin"] = "*"
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
     response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
@@ -82,7 +88,12 @@ async def _read_upload(request: web.Request) -> tuple[bytes, dict[str, str]]:
 async def _run(request: web.Request) -> tuple[PipelineResult, dict[str, str]]:
     audio_bytes, values = await _read_upload(request)
     loop = asyncio.get_running_loop()
-    audio = await loop.run_in_executor(None, decode_audio_bytes, audio_bytes)
+    audio = await loop.run_in_executor(
+        None,
+        decode_audio_bytes,
+        audio_bytes,
+        values["filename"],
+    )
     if len(audio) / 16000.0 > MAX_AUDIO_SECONDS:
         raise ValueError("音频时长不能超过 30 分钟")
     async with request.app[SEMAPHORE_KEY]:

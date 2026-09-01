@@ -48,7 +48,8 @@
       body: preparedForm
     });
     if (response.status === 204) return null;
-    if (!response.ok) {
+    const contentType = (response.headers.get('Content-Type') || '').toLowerCase();
+    if (!response.ok || !contentType.startsWith('audio/wav')) {
       let message = '语音前端处理失败';
       try {
         const payload = await response.json();
@@ -56,7 +57,16 @@
       } catch (_) {}
       throw new Error(message);
     }
-    return await response.blob();
+
+    const buffer = await response.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    const isWav = bytes.length >= 12
+      && bytes[0] === 0x52 && bytes[1] === 0x49
+      && bytes[2] === 0x46 && bytes[3] === 0x46
+      && bytes[8] === 0x57 && bytes[9] === 0x41
+      && bytes[10] === 0x56 && bytes[11] === 0x45;
+    if (!isWav) throw new Error('语音前端返回的不是有效 WAV 音频');
+    return new Blob([buffer], { type: 'audio/wav' });
   }
 
   function emptySpeechResponse() {

@@ -1,0 +1,15 @@
+[Unit]
+Description=FHR reverse tunnel from training Qwen3 to deployment host
+After=network-online.target fhr-ollama-11435.service
+Wants=network-online.target fhr-ollama-11435.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/ssh -N -T -p 10022 -i /data/userdata/dev_user1/fhr/runtime/deploy-qwen3-tunnel/id_ed25519 -o BatchMode=yes -o ExitOnForwardFailure=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -o StrictHostKeyChecking=yes -R 127.0.0.1:21435:127.0.0.1:11435 hf@113.98.61.52
+Restart=always
+RestartSec=3
+TimeoutStopSec=15
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target

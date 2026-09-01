@@ -12,6 +12,7 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 import hmac
 import json
+import logging
 import os
 from pathlib import Path
 import re
@@ -24,8 +25,13 @@ from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Request
 import httpx
 from pydantic import BaseModel, Field, model_validator
 
+from dialogue_understanding import generate_dialogue_understanding
 
-SERVICE_VERSION = "0.2.5"
+
+LOGGER = logging.getLogger(__name__)
+
+
+SERVICE_VERSION = "0.3.0"
 DEFAULT_QUESTION = "概括对话内容，并基于证据分析说话人、情绪、环境和人物关系。"
 AnalysisTask = Literal[
     "digest",
@@ -91,6 +97,9 @@ class Settings:
     emotion_url: str
     ollama_url: str
     ollama_model: str
+    dialogue_primary_url: str
+    dialogue_primary_model: str
+    dialogue_primary_timeout_seconds: float
     api_key: str
     max_upload_bytes: int
     max_structured_bytes: int
@@ -114,6 +123,15 @@ class Settings:
             ollama_model=os.getenv(
                 "CONTENT_ANALYSIS_OLLAMA_MODEL", "qwen2.5:7b"
             ).strip(),
+            dialogue_primary_url=os.getenv(
+                "CONTENT_ANALYSIS_DIALOGUE_PRIMARY_URL", ""
+            ).rstrip("/"),
+            dialogue_primary_model=os.getenv(
+                "CONTENT_ANALYSIS_DIALOGUE_PRIMARY_MODEL", "qwen3:8b"
+            ).strip(),
+            dialogue_primary_timeout_seconds=float(
+                os.getenv("CONTENT_ANALYSIS_DIALOGUE_PRIMARY_TIMEOUT", "75")
+            ),
             api_key=_load_or_create_api_key(),
             max_upload_bytes=int(
                 os.getenv("CONTENT_ANALYSIS_MAX_UPLOAD_MB", "100")
@@ -1277,12 +1295,61 @@ async def _ollama_analyze(
     if not isinstance(analysis, dict):
         raise RuntimeError("Ollama analysis result is not an object")
     analysis = apply_grounding_guardrails(analysis, value)
+    dialogue_metadata: dict[str, Any] | None = None
+    # Keep the existing multimodal analysis intact, then replace only the
+    # user-facing overview with the evidence-first single-text understanding.
+    # A dialogue-generation failure must not turn an otherwise valid analysis
+    # request into a 502 response.
+    if {"digest", "summary"} & set(value.tasks):
+        try:
+            dialogue, dialogue_metadata = await generate_dialogue_understanding(
+                client,
+                ollama_url=settings.ollama_url,
+                model=settings.ollama_model,
+                timeout_seconds=settings.ollama_timeout_seconds,
+                segments=value.conversation.segments,
+                primary_ollama_url=settings.dialogue_primary_url or None,
+                primary_model=settings.dialogue_primary_model or None,
+                primary_timeout_seconds=settings.dialogue_primary_timeout_seconds,
+            )
+            routing = dialogue_metadata.get("routing") or {}
+            analysis["dialogue_understanding"] = dialogue["text"]
+            analysis["dialogue_understanding_meta"] = {
+                "fact_count": dialogue["fact_count"],
+                "used_fact_ids": dialogue["used_fact_ids"],
+                "evidence_segment_ids": dialogue["evidence_segment_ids"],
+                "fallback_used": dialogue["fallback_used"],
+                "route": routing.get("selected"),
+                "route_model": routing.get("model"),
+                "route_fallback_used": routing.get("fallback_used", False),
+            }
+            analysis["summary"] = dialogue["text"]
+            digest = analysis.get("content_digest")
+            if isinstance(digest, dict):
+                digest["overview"] = dialogue["text"]
+            existing_uncertainties = _normalize_uncertainties(
+                analysis.get("uncertainties")
+            )
+            analysis["uncertainties"] = list(
+                dict.fromkeys(existing_uncertainties + dialogue["uncertainties"])
+            )
+        except Exception:
+            LOGGER.exception("Dialogue understanding enhancement failed")
+            existing_uncertainties = _normalize_uncertainties(
+                analysis.get("uncertainties")
+            )
+            notice = "对话理解增强暂不可用，已保留基础分析结果。"
+            analysis["uncertainties"] = list(
+                dict.fromkeys(existing_uncertainties + [notice])
+            )
     metadata = {
         "model": payload.get("model") or settings.ollama_model,
         "elapsed_seconds": round(time.perf_counter() - started, 3),
         "prompt_eval_count": payload.get("prompt_eval_count"),
         "eval_count": payload.get("eval_count"),
     }
+    if dialogue_metadata is not None:
+        metadata["dialogue_understanding"] = dialogue_metadata
     return analysis, metadata
 
 
@@ -1456,6 +1523,10 @@ async def model_info(request: Request) -> dict[str, Any]:
     return {
         "service_version": SERVICE_VERSION,
         "model": settings.ollama_model,
+        "dialogue_primary_model": settings.dialogue_primary_model
+        if settings.dialogue_primary_url
+        else None,
+        "dialogue_fallback_model": settings.ollama_model,
         "model_runtime": "ollama",
         "loads_new_gpu_model": False,
         "max_concurrency": settings.max_concurrency,

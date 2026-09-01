@@ -9,6 +9,9 @@ Environment=PYTHONUNBUFFERED=1
 Environment=CONTENT_ANALYSIS_REQUIRE_API_KEY=1
 Environment=CONTENT_ANALYSIS_API_KEY_FILE=/home/hf/.config/content-analysis-api.key
 Environment=CONTENT_ANALYSIS_MAX_CONCURRENCY=2
+Environment=CONTENT_ANALYSIS_DIALOGUE_PRIMARY_URL=http://127.0.0.1:21435
+Environment=CONTENT_ANALYSIS_DIALOGUE_PRIMARY_MODEL=qwen3:8b
+Environment=CONTENT_ANALYSIS_DIALOGUE_PRIMARY_TIMEOUT=75
 ExecStart=/home/hf/.conda/envs/qwen3-asr/bin/python -m uvicorn app:app --host 0.0.0.0 --port 18081 --workers 1
 Restart=always
 RestartSec=3

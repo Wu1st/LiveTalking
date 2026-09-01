@@ -1,10 +1,199 @@
+import asyncio
 import os
+from types import SimpleNamespace
 
 os.environ.setdefault("CONTENT_ANALYSIS_REQUIRE_API_KEY", "0")
 
 from fastapi.testclient import TestClient
+import httpx
 
 from app import app, apply_grounding_guardrails, build_structured_input
+import dialogue_understanding as dialogue_module
+from dialogue_understanding import (
+    _fallback,
+    _minimum_fact_count,
+    _normalize_ledger,
+    _prose_safety_errors,
+    _requested_fact_count,
+    _resolve_facts,
+    _valid_ledger,
+)
+
+
+def _route_result(text: str):
+    return (
+        {
+            "text": text,
+            "used_fact_ids": [],
+            "evidence_segment_ids": ["seg-1"],
+            "fact_count": 0,
+            "uncertainties": [],
+            "fallback_used": False,
+        },
+        {"mode": "test"},
+    )
+
+
+def test_dialogue_prefers_training_primary(monkeypatch):
+    calls = []
+
+    async def fake_route(client, *, ollama_url, model, timeout_seconds, segments):
+        calls.append((ollama_url, model))
+        return _route_result("训练服务器结果")
+
+    monkeypatch.setattr(
+        dialogue_module, "_generate_dialogue_understanding_on_route", fake_route
+    )
+    result, metadata = asyncio.run(
+        dialogue_module.generate_dialogue_understanding(
+            object(),
+            ollama_url="http://local",
+            model="qwen2.5:7b",
+            timeout_seconds=180,
+            segments=[SimpleNamespace(id="seg-1", text="测试")],
+            primary_ollama_url="http://training",
+            primary_model="qwen3:8b",
+            primary_timeout_seconds=75,
+        )
+    )
+
+    assert result["text"] == "训练服务器结果"
+    assert calls == [("http://training", "qwen3:8b")]
+    assert metadata["routing"] == {
+        "selected": "training-primary",
+        "model": "qwen3:8b",
+        "fallback_used": False,
+    }
+
+
+def test_dialogue_falls_back_to_local_when_training_is_unreachable(monkeypatch):
+    calls = []
+
+    async def fake_route(client, *, ollama_url, model, timeout_seconds, segments):
+        calls.append((ollama_url, model))
+        if ollama_url == "http://training":
+            raise httpx.ConnectError("training route unavailable")
+        return _route_result("部署服务器结果")
+
+    monkeypatch.setattr(
+        dialogue_module, "_generate_dialogue_understanding_on_route", fake_route
+    )
+    result, metadata = asyncio.run(
+        dialogue_module.generate_dialogue_understanding(
+            object(),
+            ollama_url="http://local",
+            model="qwen2.5:7b",
+            timeout_seconds=180,
+            segments=[SimpleNamespace(id="seg-1", text="测试")],
+            primary_ollama_url="http://training",
+            primary_model="qwen3:8b",
+            primary_timeout_seconds=75,
+        )
+    )
+
+    assert result["text"] == "部署服务器结果"
+    assert calls == [
+        ("http://training", "qwen3:8b"),
+        ("http://local", "qwen2.5:7b"),
+    ]
+    assert metadata["routing"]["selected"] == "deployment-fallback"
+    assert metadata["routing"]["fallback_used"] is True
+
+
+def test_dialogue_ledger_normalizes_only_known_boolean_drift():
+    ledger = {
+        "facts": [
+            {
+                "fact_id": "fact-001",
+                "fact_type": "topic",
+                "statement": "会议围绕项目后续安排展开讨论。",
+                "critical": None,
+                "status": "confirmed",
+            },
+            {
+                "fact_id": "fact-002",
+                "fact_type": "decision",
+                "statement": "讨论决定先修改报告再进入实施阶段。",
+                "critical": "true",
+                "status": "confirmed",
+            },
+        ],
+        "uncertainties": [],
+    }
+
+    normalized = _normalize_ledger(ledger)
+
+    assert normalized["facts"][0]["critical"] is False
+    assert normalized["facts"][1]["critical"] is True
+    assert _valid_ledger(normalized, minimum_fact_count=2) == []
+
+
+def test_dialogue_ledger_requires_more_coverage_for_long_inputs():
+    assert _minimum_fact_count([{"text": "短对话"}]) == 1
+    assert _minimum_fact_count([{"text": "中" * 200}]) == 3
+    assert _minimum_fact_count([{"text": "长" * 700}]) == 5
+    assert _requested_fact_count([{"text": "短对话"}]) == 1
+    assert _requested_fact_count([{"text": "中" * 200}]) == 5
+    assert _requested_fact_count([{"text": "长" * 700}]) == 10
+    one_fact = {
+        "facts": [{
+            "fact_id": "fact-001",
+            "fact_type": "topic",
+            "statement": "这是一条满足长度要求的主题事实。",
+            "critical": False,
+            "status": "confirmed",
+        }],
+        "uncertainties": [],
+    }
+    assert _valid_ledger(one_fact, minimum_fact_count=5) == ["facts数量必须为5到16"]
+
+
+def test_dialogue_evidence_can_cross_adjacent_asr_windows():
+    ledger = {
+        "facts": [{
+            "fact_id": "fact-001",
+            "fact_type": "requirement",
+            "statement": "顾问需要对行业有更深入的了解，以减少评价上的失真。",
+            "critical": True,
+            "status": "confirmed",
+        }],
+        "uncertainties": [],
+    }
+    segments = [
+        SimpleNamespace(
+            id="seg-0001",
+            text="客户的一些背景可能需要再深入了解。我们安排的一些顾问是什么性质也要考虑，顾问可以对这个行业更了解一点，这样在整个评价上不会有太多的一些失，",
+            start=0.0,
+        ),
+        SimpleNamespace(
+            id="seg-0002",
+            text="真或者是低点，对吧。后面改一改就可以实施。",
+            start=30.0,
+        ),
+    ]
+
+    facts, uncertainties = _resolve_facts(ledger, segments)
+
+    assert [fact["fact_id"] for fact in facts] == ["fact-001"]
+    assert facts[0]["evidence_segment_ids"] == ["seg-0001", "seg-0002"]
+    assert uncertainties == []
+
+
+def test_dialogue_fallback_keeps_all_confirmed_facts_in_natural_order():
+    facts = [
+        {"fact_id": "fact-001", "fact_type": "topic", "statement": "团队讨论部署方案。", "critical": True},
+        {"fact_id": "fact-002", "fact_type": "requirement", "statement": "需要核查公网访问条件。", "critical": True},
+        {"fact_id": "fact-003", "fact_type": "risk", "statement": "当前权限仍存在风险。", "critical": True},
+    ]
+    assert _fallback(facts) == "团队讨论部署方案。对话中提到，需要核查公网访问条件。当前权限仍存在风险。"
+
+
+def test_dialogue_safety_rejects_an_unsupported_outlook():
+    facts = [
+        {"fact_id": "fact-001", "fact_type": "number", "statement": "集团收入有所增长。", "critical": True},
+    ]
+    draft = {"dialogue_understanding": "集团收入有所增长。集团希望保持积极向上，迎接新业绩。"}
+    assert _prose_safety_errors(draft, facts)
 
 
 def test_build_structured_input_preserves_speaker_evidence_and_conflict():

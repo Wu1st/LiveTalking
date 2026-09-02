@@ -1897,7 +1897,7 @@ $(document).ready(function () {
     const fd = new FormData();
     fd.append('file', selectedAudioFile, selectedAudioFile.name || 'conversation.audio');
     fd.append('question', '理解这段对话，生成一篇自然、信息充分且有原文证据支撑的对话理解，并明确不确定信息。');
-    fd.append('tasks', 'digest,summary');
+    fd.append('tasks', 'digest,summary,qa,relationships,speakers,emotion,scene');
     fd.append('content_type_hint', 'auto');
 
     fetch('/api/content-analysis/audio', { method:'POST', body:fd })

@@ -887,7 +887,7 @@ input[type=range] { accent-color:var(--primary); }
                   <span class="dropzone-icon"><i class="bi bi-file-earmark-music"></i></span><strong>点击或拖拽音频文件到这里</strong><span>支持 WAV、MP3、M4A、AAC、FLAC、OGG、WebM 等格式</span>
                 </label>
                 <div class="audio-file-row"><div class="audio-file-name" id="audio-file-name"><i class="bi bi-paperclip"></i>尚未选择文件</div><button class="btn btn-primary" id="transcribe-upload-btn" type="button" disabled><i class="bi bi-magic"></i> 开始转写</button></div>
-                <label class="speaker-toggle" for="speaker-diarization-toggle"><input id="speaker-diarization-toggle" type="checkbox">启用说话人日志化（后台执行，不阻塞文字）</label>
+                <label class="speaker-toggle" for="speaker-diarization-toggle" title="服务器当前未安装所需的说话人模型，已临时关闭以保证转写速度"><input id="speaker-diarization-toggle" type="checkbox" disabled>说话人日志化暂不可用</label>
               </div>
             </section>
             <section class="surface-card source-card">
@@ -994,7 +994,7 @@ input[type=range] { accent-color:var(--primary); }
       <section class="mode-page" id="page-document" data-page="document">
         <section class="surface-card document-card">
           <div class="document-controls">
-            <div class="field-select"><label for="document-language">原文语言（翻译时）</label><select id="document-language"><option value="en">英语</option><option value="ja">日语</option><option value="zh">中文（仅 OCR）</option></select></div>
+            <div class="field-select"><label for="document-language">原文语言（翻译时）</label><select id="document-language"><option value="en">英语</option><option value="ja">日语</option></select></div>
             <div class="field-select"><label for="document-confidence">最低 OCR 置信度</label><select id="document-confidence"><option value="0.5">标准 · 0.50</option><option value="0.3">宽松 · 0.30</option><option value="0.7">严格 · 0.70</option></select></div>
             <div class="field-select"><label for="document-output">首选下载格式</label><select id="document-output"><option value="txt">可编辑文本</option><option value="json">结构化 JSON</option></select></div>
           </div>
@@ -1814,7 +1814,6 @@ $(document).ready(function () {
 
   function requestTranscription(file, sourceLabel, onFinished, options={}) {
     const fd = new FormData();
-    let finishedPayload = null;
     const traceId = makeClientTraceId();
     fd.append('file', file, file.name || 'environment.webm');
     fd.append('client_trace_id', traceId);
@@ -1823,10 +1822,9 @@ $(document).ready(function () {
     // 说话人模型在当前服务器不可用。普通转写必须显式关闭，避免
     // 浏览器恢复旧勾选状态或服务端默认值让请求等待失败的附加链路。
     // 日后服务恢复时，仅由明确的调用参数重新开启它。
-    // 主转写始终只跑 ASR。说话人日志化由 requestDiarization 在 ASR
-    // 返回后单独启动，避免两个 GPU 模型争抢资源并拖慢文字出现。
-    fd.append('speaker_diarization', '0');
-    $('#transcript-meta').text(sourceLabel + ' · 正在识别…');
+    const diarizationEnabled = options.speakerDiarization === true;
+    fd.append('speaker_diarization', diarizationEnabled ? '1' : '0');
+    $('#transcript-meta').text(sourceLabel + (diarizationEnabled ? ' · 正在进行说话人日志化…' : ' · 正在识别…'));
     if (options.analyzeAcoustic !== false) setAcousticReportStatus('声音分析中…', 'running');
     return fetch('/transcribe_audio', { method:'POST', body:fd })
       .then(r => r.json())
@@ -1837,52 +1835,31 @@ $(document).ready(function () {
         const info = [];
         if (data.data.duration) info.push('音频 ' + data.data.duration + 's');
         if (data.data.elapsed) info.push('耗时 ' + data.data.elapsed + 's');
-        updateTranscriptSpeakerCount(null);
-        appendTranscript(data.data.recognized, sourceLabel, info.join(' · '));
+        const diarization = data.data.speaker_diarization;
+        const useSpeakerLog = diarizationEnabled && diarization && diarization.speaker_segments;
+        const outputText = useSpeakerLog ? formatSpeakerDiarization(diarization, false) : data.data.recognized;
+        const outputLabel = useSpeakerLog ? sourceLabel + ' · 说话人日志' : sourceLabel;
+        updateTranscriptSpeakerCount(useSpeakerLog ? diarization : null);
+        if (diarizationEnabled && data.data.speaker_diarization_error)
+          info.push('说话人日志化不可用，已显示普通转写');
+        appendTranscript(outputText, outputLabel, info.join(' · '));
         if (data.data.acoustic_error) updateAcousticReport(null, data.data.acoustic_error);
         requestAcousticReport(options.analyzeAcoustic !== false);
-        finishedPayload = data.data;
       })
       .catch(err => {
         console.error(err);
         $('#transcript-meta').text(sourceLabel + ' · ' + err.message);
       })
-      .finally(() => { if (onFinished) onFinished(finishedPayload); });
-  }
-
-  function requestDiarization(file, sourceLabel) {
-    const fd = new FormData();
-    fd.append('file', file, file.name || 'audio.webm');
-    fd.append('client_trace_id', makeClientTraceId());
-    $('#transcript-meta').text(sourceLabel + ' · 文字已完成，正在后台区分说话人…');
-    return fetch('/diarize_audio', { method:'POST', body:fd })
-      .then(r => r.json())
-      .then(data => {
-        if (data.code !== 0 || !data.data || !data.data.speaker_segments) {
-          throw new Error((data && data.msg) || '说话人日志化暂不可用');
-        }
-        const speakerText = formatSpeakerDiarization(data.data, false);
-        if (speakerText) $('#transcript-result').val(speakerText);
-        updateTranscriptSpeakerCount(data.data);
-        $('#transcript-meta').text(sourceLabel + ' · 说话人日志完成');
-      })
-      .catch(err => {
-        console.warn('speaker diarization unavailable:', err);
-        $('#transcript-meta').text(sourceLabel + ' · 已显示转写；说话人日志化暂不可用');
-      });
+      .finally(() => { if (onFinished) onFinished(); });
   }
 
   $('#audio-file-input').on('change', function () { chooseAudioFile(this.files && this.files[0]); });
   $('#transcribe-upload-btn').click(function () {
     if (!selectedAudioFile) return;
-    const file = selectedAudioFile;
-    const sourceLabel = file.name;
-    const diarizationEnabled = $('#speaker-diarization-toggle').prop('checked');
     const button = $(this);
     button.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> 转写中');
-    requestTranscription(file, sourceLabel, transcription => {
+    requestTranscription(selectedAudioFile, selectedAudioFile.name, () => {
       button.prop('disabled', false).html('<i class="bi bi-magic"></i> 开始转写');
-      if (transcription && diarizationEnabled) requestDiarization(file, sourceLabel);
     });
   });
 
@@ -1897,7 +1874,7 @@ $(document).ready(function () {
     const fd = new FormData();
     fd.append('file', selectedAudioFile, selectedAudioFile.name || 'conversation.audio');
     fd.append('question', '理解这段对话，生成一篇自然、信息充分且有原文证据支撑的对话理解，并明确不确定信息。');
-    fd.append('tasks', 'digest,summary');
+    fd.append('tasks', 'digest,summary,qa,relationships,speakers,emotion,scene');
     fd.append('content_type_hint', 'auto');
 
     fetch('/api/content-analysis/audio', { method:'POST', body:fd })
@@ -2394,7 +2371,6 @@ $(document).ready(function () {
   let documentPollTimer = null;
   let documentJobId = null;
   let documentJobTranslated = false;
-  let documentPollFailures = 0;
 
   function setDocumentNote(text, isError=false) {
     $('#document-note').text(text).toggleClass('error', isError);
@@ -2413,78 +2389,6 @@ $(document).ready(function () {
     }
   }
 
-  function formatDocumentBytes(bytes) {
-    if (!Number.isFinite(bytes) || bytes < 1024) return Math.max(0, Math.round(bytes || 0)) + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-  }
-
-  // fetch 无法向界面报告 multipart 上传进度。经 SSH 本地转发访问时，
-  // 这会把“文件正在传输”和“隧道连接已经断开”都显示成同一个卡住状态。
-  // 此处只替换浏览器提交方式；服务端 API、OCR runtime 和任务协议均不改变。
-  function submitDocumentUpload(url, form) {
-    return new Promise((resolve, reject) => {
-      const request = new XMLHttpRequest();
-      let sentBytes = 0;
-      let lastSampleAt = Date.now();
-      let lastSampleBytes = 0;
-      let waitingNotice = null;
-
-      const clearWaitingNotice = () => {
-        if (waitingNotice !== null) clearTimeout(waitingNotice);
-        waitingNotice = null;
-      };
-      const fail = (message) => {
-        clearWaitingNotice();
-        reject(new Error(message));
-      };
-
-      request.open('POST', url, true);
-      request.responseType = 'text';
-      request.upload.onprogress = (event) => {
-        if (!event.lengthComputable) return;
-        clearWaitingNotice();
-        sentBytes = event.loaded;
-        const now = Date.now();
-        const elapsed = Math.max(1, now - lastSampleAt);
-        const bytesPerSecond = Math.max(0, (event.loaded - lastSampleBytes) * 1000 / elapsed);
-        lastSampleAt = now;
-        lastSampleBytes = event.loaded;
-        const percent = Math.min(100, event.loaded / Math.max(1, event.total) * 100);
-        $('#document-progress-bar').css('width', Math.max(2, percent) + '%');
-        $('#document-progress-label').text(percent >= 100 ? '文件已传完，正在创建 OCR 任务' : '正在通过本地 SSH 隧道上传');
-        $('#document-progress-count').text(Math.round(percent) + '%');
-        setDocumentNote(
-          '正在上传：' + formatDocumentBytes(event.loaded) + ' / ' + formatDocumentBytes(event.total)
-          + (bytesPerSecond ? ' · ' + formatDocumentBytes(bytesPerSecond) + '/s' : '')
-        );
-      };
-      request.onload = () => {
-        clearWaitingNotice();
-        let payload = null;
-        try { payload = request.responseText ? JSON.parse(request.responseText) : null; } catch (_) { /* handled below */ }
-        if (request.status < 200 || request.status >= 300) {
-          fail((payload && (payload.detail || payload.msg)) || ('请求失败：HTTP ' + request.status));
-          return;
-        }
-        if (!payload || !payload.job_id) {
-          fail('服务未返回 OCR 任务编号，请重新选择文件后再试。');
-          return;
-        }
-        resolve(payload);
-      };
-      request.onerror = () => fail('上传连接中断：请确认本地 SSH 转发窗口仍在运行，然后重试。');
-      request.onabort = () => fail('上传已取消。');
-      waitingNotice = setTimeout(() => {
-        if (sentBytes === 0) {
-          $('#document-progress-label').text('正在等待本地 SSH 隧道传输');
-          setDocumentNote('尚未收到上传数据。请保持 SSH 转发窗口开启；无需重复点击提交。', true);
-        }
-      }, 15000);
-      request.send(form);
-    });
-  }
-
   function chooseDocument(file) {
     if (!file) return;
     if (!/\.(pdf|tiff?)$/i.test(file.name || '')) {
@@ -2498,20 +2402,6 @@ $(document).ready(function () {
     $('#document-result-actions').removeClass('visible');
     updateDocumentSubmit();
   }
-
-  function syncDocumentTranslationOption(showNotice=false) {
-    const sourceLanguage = $('#document-language').val();
-    const chineseSource = sourceLanguage === 'zh';
-    const translationToggle = $('#document-translate');
-    if (chineseSource) translationToggle.prop('checked', false);
-    translationToggle.prop('disabled', chineseSource);
-    if (showNotice && chineseSource) {
-      setDocumentNote('中文原文将只执行 OCR；系统不会进行“中文翻译成中文”。');
-    }
-  }
-
-  $('#document-language').on('change', () => syncDocumentTranslationOption(true));
-  syncDocumentTranslationOption(false);
 
   $('#document-select').click(() => $('#document-file').trigger('click'));
   $('#document-file').change(function () { chooseDocument(this.files && this.files[0]); });
@@ -2552,7 +2442,6 @@ $(document).ready(function () {
       const response = await fetch('/api/document/jobs/' + documentJobId, {cache:'no-store'});
       if (!response.ok) throw new Error(await documentError(response));
       const state = await response.json();
-      documentPollFailures = 0;
       const total = Number(state.page_count || 0);
       const completed = Number(state.completed_pages || 0);
       const percent = total ? Math.min(100, completed / total * 100) : 2;
@@ -2566,15 +2455,7 @@ $(document).ready(function () {
       }
       documentPollTimer = setTimeout(pollDocumentJob, 1000);
     } catch (error) {
-      documentPollFailures += 1;
-      // 已成功提交的任务仍在服务器执行。隧道短暂波动时，不能把它误报成 OCR 失败。
-      if (documentPollFailures <= 12) {
-        $('#document-progress-label').text('连接波动，正在重连任务进度');
-        setDocumentNote('任务已提交，正在通过 SSH 隧道重新连接（第 ' + documentPollFailures + ' 次）。', true);
-        documentPollTimer = setTimeout(pollDocumentJob, Math.min(5000, documentPollFailures * 1000));
-        return;
-      }
-      setDocumentNote((error.message || '读取任务进度失败。') + ' 请确认 SSH 转发后刷新页面；任务不会因此丢失。', true);
+      setDocumentNote(error.message || '读取任务进度失败。', true);
       updateDocumentSubmit();
     }
   }
@@ -2584,8 +2465,7 @@ $(document).ready(function () {
     clearTimeout(documentPollTimer);
     documentPollTimer = null;
     documentJobId = null;
-    documentPollFailures = 0;
-    documentJobTranslated = $('#document-language').val() !== 'zh' && $('#document-translate').prop('checked');
+    documentJobTranslated = $('#document-translate').prop('checked');
     $(this).prop('disabled', true);
     $('#document-result-actions').removeClass('visible');
     $('#document-progress-wrap').addClass('visible');
@@ -2602,10 +2482,10 @@ $(document).ready(function () {
       min_confidence: $('#document-confidence').val()
     });
     try {
-      const job = await submitDocumentUpload('/api/document/jobs?' + params.toString(), form);
+      const response = await fetch('/api/document/jobs?' + params.toString(), {method:'POST', body:form});
+      if (!response.ok) throw new Error(await documentError(response));
+      const job = await response.json();
       documentJobId = job.job_id;
-      $('#document-progress-bar').css('width', '2%');
-      $('#document-progress-count').text('0 / — 页');
       $('#document-progress-label').text('任务已提交 · queued');
       pollDocumentJob();
     } catch (error) {

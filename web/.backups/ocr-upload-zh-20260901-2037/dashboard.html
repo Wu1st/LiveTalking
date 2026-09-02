@@ -994,7 +994,7 @@ input[type=range] { accent-color:var(--primary); }
       <section class="mode-page" id="page-document" data-page="document">
         <section class="surface-card document-card">
           <div class="document-controls">
-            <div class="field-select"><label for="document-language">原文语言（翻译时）</label><select id="document-language"><option value="en">英语</option><option value="ja">日语</option><option value="zh">中文（仅 OCR）</option></select></div>
+            <div class="field-select"><label for="document-language">原文语言（翻译时）</label><select id="document-language"><option value="en">英语</option><option value="ja">日语</option></select></div>
             <div class="field-select"><label for="document-confidence">最低 OCR 置信度</label><select id="document-confidence"><option value="0.5">标准 · 0.50</option><option value="0.3">宽松 · 0.30</option><option value="0.7">严格 · 0.70</option></select></div>
             <div class="field-select"><label for="document-output">首选下载格式</label><select id="document-output"><option value="txt">可编辑文本</option><option value="json">结构化 JSON</option></select></div>
           </div>
@@ -1897,7 +1897,7 @@ $(document).ready(function () {
     const fd = new FormData();
     fd.append('file', selectedAudioFile, selectedAudioFile.name || 'conversation.audio');
     fd.append('question', '理解这段对话，生成一篇自然、信息充分且有原文证据支撑的对话理解，并明确不确定信息。');
-    fd.append('tasks', 'digest,summary');
+    fd.append('tasks', 'digest,summary,qa,relationships,speakers,emotion,scene');
     fd.append('content_type_hint', 'auto');
 
     fetch('/api/content-analysis/audio', { method:'POST', body:fd })
@@ -2394,7 +2394,6 @@ $(document).ready(function () {
   let documentPollTimer = null;
   let documentJobId = null;
   let documentJobTranslated = false;
-  let documentPollFailures = 0;
 
   function setDocumentNote(text, isError=false) {
     $('#document-note').text(text).toggleClass('error', isError);
@@ -2413,78 +2412,6 @@ $(document).ready(function () {
     }
   }
 
-  function formatDocumentBytes(bytes) {
-    if (!Number.isFinite(bytes) || bytes < 1024) return Math.max(0, Math.round(bytes || 0)) + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-  }
-
-  // fetch 无法向界面报告 multipart 上传进度。经 SSH 本地转发访问时，
-  // 这会把“文件正在传输”和“隧道连接已经断开”都显示成同一个卡住状态。
-  // 此处只替换浏览器提交方式；服务端 API、OCR runtime 和任务协议均不改变。
-  function submitDocumentUpload(url, form) {
-    return new Promise((resolve, reject) => {
-      const request = new XMLHttpRequest();
-      let sentBytes = 0;
-      let lastSampleAt = Date.now();
-      let lastSampleBytes = 0;
-      let waitingNotice = null;
-
-      const clearWaitingNotice = () => {
-        if (waitingNotice !== null) clearTimeout(waitingNotice);
-        waitingNotice = null;
-      };
-      const fail = (message) => {
-        clearWaitingNotice();
-        reject(new Error(message));
-      };
-
-      request.open('POST', url, true);
-      request.responseType = 'text';
-      request.upload.onprogress = (event) => {
-        if (!event.lengthComputable) return;
-        clearWaitingNotice();
-        sentBytes = event.loaded;
-        const now = Date.now();
-        const elapsed = Math.max(1, now - lastSampleAt);
-        const bytesPerSecond = Math.max(0, (event.loaded - lastSampleBytes) * 1000 / elapsed);
-        lastSampleAt = now;
-        lastSampleBytes = event.loaded;
-        const percent = Math.min(100, event.loaded / Math.max(1, event.total) * 100);
-        $('#document-progress-bar').css('width', Math.max(2, percent) + '%');
-        $('#document-progress-label').text(percent >= 100 ? '文件已传完，正在创建 OCR 任务' : '正在通过本地 SSH 隧道上传');
-        $('#document-progress-count').text(Math.round(percent) + '%');
-        setDocumentNote(
-          '正在上传：' + formatDocumentBytes(event.loaded) + ' / ' + formatDocumentBytes(event.total)
-          + (bytesPerSecond ? ' · ' + formatDocumentBytes(bytesPerSecond) + '/s' : '')
-        );
-      };
-      request.onload = () => {
-        clearWaitingNotice();
-        let payload = null;
-        try { payload = request.responseText ? JSON.parse(request.responseText) : null; } catch (_) { /* handled below */ }
-        if (request.status < 200 || request.status >= 300) {
-          fail((payload && (payload.detail || payload.msg)) || ('请求失败：HTTP ' + request.status));
-          return;
-        }
-        if (!payload || !payload.job_id) {
-          fail('服务未返回 OCR 任务编号，请重新选择文件后再试。');
-          return;
-        }
-        resolve(payload);
-      };
-      request.onerror = () => fail('上传连接中断：请确认本地 SSH 转发窗口仍在运行，然后重试。');
-      request.onabort = () => fail('上传已取消。');
-      waitingNotice = setTimeout(() => {
-        if (sentBytes === 0) {
-          $('#document-progress-label').text('正在等待本地 SSH 隧道传输');
-          setDocumentNote('尚未收到上传数据。请保持 SSH 转发窗口开启；无需重复点击提交。', true);
-        }
-      }, 15000);
-      request.send(form);
-    });
-  }
-
   function chooseDocument(file) {
     if (!file) return;
     if (!/\.(pdf|tiff?)$/i.test(file.name || '')) {
@@ -2498,20 +2425,6 @@ $(document).ready(function () {
     $('#document-result-actions').removeClass('visible');
     updateDocumentSubmit();
   }
-
-  function syncDocumentTranslationOption(showNotice=false) {
-    const sourceLanguage = $('#document-language').val();
-    const chineseSource = sourceLanguage === 'zh';
-    const translationToggle = $('#document-translate');
-    if (chineseSource) translationToggle.prop('checked', false);
-    translationToggle.prop('disabled', chineseSource);
-    if (showNotice && chineseSource) {
-      setDocumentNote('中文原文将只执行 OCR；系统不会进行“中文翻译成中文”。');
-    }
-  }
-
-  $('#document-language').on('change', () => syncDocumentTranslationOption(true));
-  syncDocumentTranslationOption(false);
 
   $('#document-select').click(() => $('#document-file').trigger('click'));
   $('#document-file').change(function () { chooseDocument(this.files && this.files[0]); });
@@ -2552,7 +2465,6 @@ $(document).ready(function () {
       const response = await fetch('/api/document/jobs/' + documentJobId, {cache:'no-store'});
       if (!response.ok) throw new Error(await documentError(response));
       const state = await response.json();
-      documentPollFailures = 0;
       const total = Number(state.page_count || 0);
       const completed = Number(state.completed_pages || 0);
       const percent = total ? Math.min(100, completed / total * 100) : 2;
@@ -2566,15 +2478,7 @@ $(document).ready(function () {
       }
       documentPollTimer = setTimeout(pollDocumentJob, 1000);
     } catch (error) {
-      documentPollFailures += 1;
-      // 已成功提交的任务仍在服务器执行。隧道短暂波动时，不能把它误报成 OCR 失败。
-      if (documentPollFailures <= 12) {
-        $('#document-progress-label').text('连接波动，正在重连任务进度');
-        setDocumentNote('任务已提交，正在通过 SSH 隧道重新连接（第 ' + documentPollFailures + ' 次）。', true);
-        documentPollTimer = setTimeout(pollDocumentJob, Math.min(5000, documentPollFailures * 1000));
-        return;
-      }
-      setDocumentNote((error.message || '读取任务进度失败。') + ' 请确认 SSH 转发后刷新页面；任务不会因此丢失。', true);
+      setDocumentNote(error.message || '读取任务进度失败。', true);
       updateDocumentSubmit();
     }
   }
@@ -2584,8 +2488,7 @@ $(document).ready(function () {
     clearTimeout(documentPollTimer);
     documentPollTimer = null;
     documentJobId = null;
-    documentPollFailures = 0;
-    documentJobTranslated = $('#document-language').val() !== 'zh' && $('#document-translate').prop('checked');
+    documentJobTranslated = $('#document-translate').prop('checked');
     $(this).prop('disabled', true);
     $('#document-result-actions').removeClass('visible');
     $('#document-progress-wrap').addClass('visible');
@@ -2602,10 +2505,10 @@ $(document).ready(function () {
       min_confidence: $('#document-confidence').val()
     });
     try {
-      const job = await submitDocumentUpload('/api/document/jobs?' + params.toString(), form);
+      const response = await fetch('/api/document/jobs?' + params.toString(), {method:'POST', body:form});
+      if (!response.ok) throw new Error(await documentError(response));
+      const job = await response.json();
       documentJobId = job.job_id;
-      $('#document-progress-bar').css('width', '2%');
-      $('#document-progress-count').text('0 / — 页');
       $('#document-progress-label').text('任务已提交 · queued');
       pollDocumentJob();
     } catch (error) {

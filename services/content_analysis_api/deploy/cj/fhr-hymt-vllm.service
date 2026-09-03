@@ -1,0 +1,25 @@
+[Unit]
+Description=FHR Hy-MT2-1.8B vLLM translation service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/data/cj/qwen3-asr/ocr-translation-api
+Environment=CUDA_VISIBLE_DEVICES=0
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONNOUSERSITE=1
+Environment=PYTHONPATH=/data/cj/qwen3-asr/runtimes/vllm/lib/python3.12/site-packages
+Environment=PATH=/data/cj/qwen3-asr/runtimes/vllm/bin:/data/cj/qwen3-asr/runtimes/python312/bin:/usr/local/cuda/bin:/usr/local/bin:/usr/bin:/bin
+Environment=XDG_CACHE_HOME=/data/cj/qwen3-asr/run/cache
+Environment=HF_HOME=/data/cj/qwen3-asr/run/cache/huggingface
+Environment=TORCHINDUCTOR_CACHE_DIR=/data/cj/qwen3-asr/run/cache/torchinductor
+ExecStart=/data/cj/qwen3-asr/runtimes/python312/bin/python /data/cj/qwen3-asr/runtimes/vllm/bin/vllm serve /data/cj/qwen3-asr/models/translation/Hy-MT2-1.8B --host 127.0.0.1 --port 8101 --dtype bfloat16 --max-model-len 8192 --served-model-name tencent/Hy-MT2-1.8B --gpu-memory-utilization 0.45
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=60
+KillSignal=SIGTERM
+LimitNOFILE=1048576
+
+[Install]
+WantedBy=default.target

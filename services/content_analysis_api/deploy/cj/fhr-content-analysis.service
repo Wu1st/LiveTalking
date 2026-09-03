@@ -1,0 +1,26 @@
+[Unit]
+Description=FHR dialogue understanding API
+After=network-online.target fhr-ollama-11435.service
+Wants=network-online.target fhr-ollama-11435.service
+
+[Service]
+Type=simple
+WorkingDirectory=/data/cj/qwen3-asr/LiveTalking/services/content_analysis_api
+Environment=PYTHONUNBUFFERED=1
+Environment=CONTENT_ANALYSIS_REQUIRE_API_KEY=1
+Environment=CONTENT_ANALYSIS_API_KEY_FILE=/data/cj/qwen3-asr/run/content-analysis-api.key
+Environment=CONTENT_ANALYSIS_MAX_CONCURRENCY=2
+Environment=CONTENT_ANALYSIS_OLLAMA_URL=http://127.0.0.1:11435
+Environment=CONTENT_ANALYSIS_OLLAMA_MODEL=qwen2.5:7b
+Environment=CONTENT_ANALYSIS_DIALOGUE_PRIMARY_URL=http://127.0.0.1:11435
+Environment=CONTENT_ANALYSIS_DIALOGUE_PRIMARY_MODEL=qwen3:8b
+Environment=CONTENT_ANALYSIS_DIALOGUE_PRIMARY_TIMEOUT=75
+ExecStart=/opt/envs/ml-base/bin/python3 -m uvicorn app:app --host 127.0.0.1 --port 18081 --workers 1
+Restart=always
+RestartSec=3
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=default.target

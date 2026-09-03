@@ -1,0 +1,18 @@
+[Unit]
+Description=FHR GPU OCR and Hy-MT2 document API on CJ
+After=network-online.target fhr-hymt-vllm.service
+Wants=network-online.target fhr-hymt-vllm.service
+
+[Service]
+Type=simple
+WorkingDirectory=/data/cj/qwen3-asr/ocr-translation-api
+ExecStart=/data/cj/qwen3-asr/run/deploy/start_ocr_translation_gpu.sh
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+KillMode=mixed
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=default.target

@@ -1,7 +1,7 @@
 [Unit]
-Description=FHR GPU OCR and Hy-MT2 document API on CJ
-After=network-online.target fhr-hymt-vllm.service
-Wants=network-online.target fhr-hymt-vllm.service
+Description=FHR GPU OCR and TranslateGemma document API on CJ
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple

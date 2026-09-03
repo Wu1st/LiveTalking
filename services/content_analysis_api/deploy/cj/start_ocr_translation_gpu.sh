@@ -19,7 +19,7 @@ OCR_CUDA_LIBS="$(find "${OCR_SITE}" -type d -path '*/nvidia/*/lib' -print | past
 export LD_LIBRARY_PATH="${OCR_SITE}/paddle/libs${OCR_CUDA_LIBS:+:${OCR_CUDA_LIBS}}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
 export PYTHONNOUSERSITE=1
 export PYTHONPATH="${PROJECT_ROOT}/src:${OCR_SITE}"
-export CUDA_VISIBLE_DEVICES=1
+export CUDA_VISIBLE_DEVICES=0
 export PADDLE_PDX_CACHE_HOME="${ROOT}/model_cache"
 export PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK=True
 
@@ -38,7 +38,6 @@ export OCR_P1C2_CTC_MODEL_DIR="${ROOT}/models/ocr/PP-OCRv6_medium_rec_ctc_reduce
 export TRANSLATION_BACKEND=openai-compatible
 export TRANSLATION_ENDPOINT="http://127.0.0.1:11434/v1"
 export TRANSLATION_MODEL="translategemma:latest"
-export TRANSLATION_MEMORY_NAMESPACE="cj-translategemma-v1"
 export TRANSLATION_REQUEST_CONCURRENCY=4
 export TRANSLATION_USE_NATIVE_BATCH_ENDPOINT=0
 export TRANSLATION_TEMPERATURE=0.0

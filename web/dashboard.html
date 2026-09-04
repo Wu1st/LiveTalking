@@ -569,17 +569,27 @@ input[type=range] { accent-color:var(--primary); }
 .acoustic-report-foot { color:#929dae; font-size:10px; line-height:1.55; }
 .conversation-analysis-card { overflow:hidden; }
 .conversation-analysis-actions { display:flex; align-items:center; gap:9px; }
+.analysis-mode-control {
+  min-height:30px; display:flex; align-items:center; gap:7px; padding:3px 5px 3px 9px;
+  border:1px solid #dbe4f7; border-radius:9px; color:#68758e; background:#fff;
+  font-size:10px; white-space:nowrap;
+}
+.analysis-mode-control select {
+  min-width:112px; height:24px; padding:0 24px 0 7px; border:0; outline:0;
+  color:#33405a; background:#f6f8fd; border-radius:6px; font:600 11px/1 inherit;
+}
 .conversation-analysis-status {
   padding:4px 9px; border:1px solid #dbe4f7; border-radius:999px; color:#77849b;
   background:#fff; font-size:10px; white-space:nowrap;
 }
 .conversation-analysis-status.running { color:#3157d5; border-color:#cad7fa; background:#f1f5ff; }
 .conversation-analysis-status.success { color:#258460; border-color:#cfe9de; background:#f2fbf7; }
+.conversation-analysis-status.partial { color:#9a6717; border-color:#f0d8a9; background:#fff9ec; }
 .conversation-analysis-status.error { color:#c94d54; border-color:#f1d0d2; background:#fff6f6; }
-.conversation-analysis-body { padding:18px 20px 20px; color:#3f4d66; }
-.conversation-analysis-body.placeholder { color:#929dae; font-size:12px; line-height:1.7; }
+.conversation-analysis-body { padding:18px 20px 20px; color:#202b3d; background:#fff; box-shadow:none; }
+.conversation-analysis-body.placeholder { color:#202b3d; background:#fff; box-shadow:none; font-size:12px; line-height:1.7; }
 .conversation-analysis-overview {
-  padding:14px 16px; border:1px solid #dde5f4; border-radius:12px; background:#f8faff;
+  padding:0; border:0; border-radius:0; background:transparent; box-shadow:none;
   font-size:13px; line-height:1.8; white-space:pre-wrap;
 }
 .conversation-analysis-meta { margin-top:8px; color:#8a96a9; font-size:10px; }
@@ -930,8 +940,15 @@ input[type=range] { accent-color:var(--primary); }
             <div class="surface-head">
               <div class="surface-title"><i class="bi bi-stars"></i>对话理解</div>
               <div class="conversation-analysis-actions">
+                <label class="analysis-mode-control" for="conversation-analysis-mode">
+                  <span>分析模式</span>
+                  <select id="conversation-analysis-mode">
+                    <option value="quick_summary">快速总结</option>
+                    <option value="multimodal_analysis" selected>完整智能分析</option>
+                  </select>
+                </label>
                 <span class="conversation-analysis-status" id="conversation-analysis-status">等待音频</span>
-                <button class="btn btn-primary btn-sm" id="conversation-analysis-btn" type="button" disabled><i class="bi bi-lightbulb"></i> 生成对话理解</button>
+                <button class="btn btn-primary btn-sm" id="conversation-analysis-btn" type="button" disabled><i class="bi bi-lightbulb"></i> 开始智能分析</button>
               </div>
             </div>
             <div class="conversation-analysis-body placeholder" id="conversation-analysis-result">选择一段会议、访谈、聊天、讲解或其他对话音频后，可生成内容概览、关键观点、话题推进、说话人贡献、情绪与场景分析。</div>
@@ -1683,29 +1700,54 @@ $(document).ready(function () {
   }
 
   function setConversationAnalysisStatus(text, state='') {
-    $('#conversation-analysis-status').removeClass('running success error').addClass(state).text(text);
+    $('#conversation-analysis-status').removeClass('running success partial error').addClass(state).text(text);
+  }
+
+  function selectedConversationAnalysisMode() {
+    return $('#conversation-analysis-mode').val() === 'quick_summary'
+      ? 'quick_summary' : 'multimodal_analysis';
+  }
+
+  function conversationAnalysisButtonLabel(retry=false) {
+    const quick = selectedConversationAnalysisMode() === 'quick_summary';
+    const text = quick ? '快速总结' : '智能分析';
+    return '<i class="bi bi-lightbulb"></i> ' + (retry ? '重新' : '开始') + text;
   }
 
   function resetConversationAnalysis() {
     const available = !!selectedAudioFile;
+    const quick = selectedConversationAnalysisMode() === 'quick_summary';
     $('#conversation-analysis-result')
       .addClass('placeholder')
       .text(available
-        ? '音频已就绪。点击“生成智能总结”，系统将综合转写、说话人、情绪和声音场景进行理解。'
-        : '选择一段会议、访谈、聊天、讲解或其他对话音频后，可生成内容概览、关键观点、话题推进、说话人贡献、情绪与场景分析。');
+        ? (quick
+          ? '音频已就绪。快速总结只执行语音转写和文字内容理解。'
+          : '音频已就绪。完整智能分析将综合说话人、整段声音场景、整体情绪和转写内容。')
+        : (quick
+          ? '选择音频后，可快速生成基于转写文字的内容总结。'
+          : '选择音频后，可生成说话人、整段声音场景、整体情绪和对话内容的完整分析。'));
     setConversationAnalysisStatus(available ? '可以生成' : '等待音频');
     $('#conversation-analysis-btn').prop('disabled', !available || conversationAnalysisPending);
+    $('#conversation-analysis-btn').html(conversationAnalysisButtonLabel(false));
   }
 
   function conversationItemText(item) {
     if (item === null || item === undefined) return '';
     if (typeof item === 'string' || typeof item === 'number') return String(item);
     if (Array.isArray(item)) return item.map(conversationItemText).filter(Boolean).join('；');
-    const prefix = item.time_label ? '[' + item.time_label + '] ' : '';
+    const timeLabel = item.time_label || (
+      Number.isFinite(Number(item.start_seconds))
+        ? Number(item.start_seconds).toFixed(1) + 's'
+          + (Number.isFinite(Number(item.end_seconds))
+            ? '–' + Number(item.end_seconds).toFixed(1) + 's' : '')
+        : ''
+    );
+    const prefix = timeLabel ? '[' + timeLabel + '] ' : '';
     const speaker = item.display_name || item.speaker || '';
     const body = item.narrative || item.contribution || item.text || item.point
       || item.description || item.summary || item.decision || item.action
-      || item.question || item.relationship || item.title || item.label || '';
+      || item.question || item.relationship || item.title || item.label_zh
+      || item.label || '';
     const inference = item.inference ? '（' + item.inference + '）' : '';
     const confidence = Number.isFinite(Number(item.confidence))
       ? '（' + Math.round(Number(item.confidence) * 100) + '%）' : '';
@@ -1739,7 +1781,11 @@ $(document).ready(function () {
 
     const meta = [];
     if (digest.content_type) meta.push('内容类型：' + (typeLabels[digest.content_type] || digest.content_type));
-    if (payload.model) meta.push('模型：' + payload.model);
+    const modelName = typeof payload.model === 'string'
+      ? payload.model
+      : payload.model && payload.model.model;
+    if (modelName) meta.push('模型：' + modelName);
+    if (payload.analysis_mode) meta.push('模式：' + (payload.analysis_mode === 'quick_summary' ? '快速总结' : '完整智能分析'));
     if (payload.elapsed_seconds) meta.push('耗时：' + payload.elapsed_seconds + ' 秒');
     if (meta.length) root.append($('<div>').addClass('conversation-analysis-meta').text(meta.join(' · ')));
 
@@ -1747,6 +1793,15 @@ $(document).ready(function () {
     addConversationBlock(grid, '关键观点', digest.key_points);
     addConversationBlock(grid, '话题推进', digest.topic_progression, true);
     addConversationBlock(grid, '说话人贡献', digest.speaker_contributions);
+
+    const speakers = analysis.speaker_analysis || {};
+    const speakerRows = (speakers.speakers || []).map(item => ({
+      speaker:item.display_name || item.speaker,
+      text:'片段 ' + (item.segment_count || 0) + ' 条'
+        + (Number.isFinite(Number(item.speaking_seconds))
+          ? '，发言约 ' + Number(item.speaking_seconds).toFixed(1) + ' 秒' : '')
+    }));
+    addConversationBlock(grid, '说话人分析', speakerRows);
 
     const emotion = analysis.emotion_analysis || {};
     const emotionText = emotion.observed_label
@@ -1765,6 +1820,12 @@ $(document).ready(function () {
     (digest.open_questions || []).forEach(item => outcomes.push('待确认：' + conversationItemText(item)));
     addConversationBlock(grid, '结论与后续事项', outcomes, true);
     addConversationBlock(grid, '不确定信息', analysis.uncertainties, true);
+    const failedTasks = (payload.failed_tasks || []).map(item => {
+      const task = item.task || 'unknown';
+      const labels = {asr:'语音转写',diarization:'说话人',acoustic:'场景',emotion:'情绪',llm:'内容理解',transcript:'转写整理'};
+      return (labels[task] || task) + '：' + (item.reason || '执行失败');
+    });
+    addConversationBlock(grid, '未完成模块', failedTasks, true);
     if (grid.children().length) root.append(grid);
   }
 
@@ -1886,31 +1947,44 @@ $(document).ready(function () {
     });
   });
 
+  $('#conversation-analysis-mode').change(function () {
+    if (!conversationAnalysisPending) resetConversationAnalysis();
+  });
+
   $('#conversation-analysis-btn').click(function () {
     if (!selectedAudioFile || conversationAnalysisPending) return;
     const button = $(this);
+    const analysisMode = selectedConversationAnalysisMode();
+    const quick = analysisMode === 'quick_summary';
     conversationAnalysisPending = true;
     button.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> 理解中');
-    setConversationAnalysisStatus('正在综合分析…', 'running');
-    $('#conversation-analysis-result').addClass('placeholder').text('正在进行语音转写、说话人区分、情绪识别、场景分析和内容理解，通常需要几十秒，请稍候…');
+    setConversationAnalysisStatus(quick ? '正在快速总结…' : '正在完整分析…', 'running');
+    $('#conversation-analysis-result').addClass('placeholder').text(quick
+      ? '正在进行语音转写和文字内容总结，请稍候…'
+      : '正在独立执行语音转写、说话人日志化、全段声音场景、整体情绪和多模态内容理解；单项失败不会丢失其他结果。');
 
     const fd = new FormData();
     fd.append('file', selectedAudioFile, selectedAudioFile.name || 'conversation.audio');
-    fd.append('question', '理解这段对话，生成一篇自然、信息充分且有原文证据支撑的对话理解，并明确不确定信息。');
-    fd.append('tasks', 'digest,summary');
+    fd.append('analysis_mode', analysisMode);
+    fd.append('question', quick
+      ? '根据转写文字快速概括这段对话，只陈述有文字证据支持的内容。'
+      : '综合转写、说话人、整段声音场景和整体情绪证据，完整分析对话主题、人物贡献、可能关系、结论与不确定信息。');
+    fd.append('tasks', quick
+      ? 'digest,summary'
+      : 'digest,summary,qa,relationships,speakers,emotion,scene');
     fd.append('content_type_hint', 'auto');
 
     fetch('/api/content-analysis/audio', { method:'POST', body:fd })
       .then(async response => {
         const data = await response.json().catch(() => ({}));
-        if (!response.ok || data.status !== 'completed') {
+        if (!response.ok || !['completed','partial'].includes(data.status)) {
           throw new Error(data.detail || '对话分析失败');
         }
         return data;
       })
       .then(data => {
         renderConversationAnalysis(data);
-        setConversationAnalysisStatus('分析完成', 'success');
+        setConversationAnalysisStatus(data.status === 'partial' ? '部分完成' : '分析完成', data.status === 'partial' ? 'partial' : 'success');
       })
       .catch(error => {
         console.error(error);
@@ -1919,7 +1993,7 @@ $(document).ready(function () {
       })
       .finally(() => {
         conversationAnalysisPending = false;
-        button.prop('disabled', !selectedAudioFile).html('<i class="bi bi-lightbulb"></i> 重新生成对话理解');
+        button.prop('disabled', !selectedAudioFile).html(conversationAnalysisButtonLabel(true));
       });
   });
 

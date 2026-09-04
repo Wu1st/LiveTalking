@@ -11,9 +11,6 @@ import app as app_module
 from app import (
     StructuredAnalysisRequest,
     _build_analysis_plan,
-    _ensure_emotion_supplements_overview,
-    _emotion_overview_guidance,
-    _remove_speaker_labels_from_overview,
     _ollama_analyze,
     app,
     apply_grounding_guardrails,
@@ -114,94 +111,6 @@ def _route_result(text: str):
         },
         {"mode": "test"},
     )
-
-
-def test_emotion_overview_guidance_allows_only_reliable_whole_audio_labels():
-    eligible = _emotion_overview_guidance(
-        SimpleNamespace(label="中立", confidence=0.81, scope="whole_audio")
-    )
-    assert eligible == {
-        "may_mention": True,
-        "reason": "eligible",
-        "observed_label": "中立",
-        "confidence": 0.81,
-        "scope": "whole_audio",
-        "wording_rule": (
-            "最多用一个从句描述整段对话的整体氛围；逐字使用observed_label；"
-            "不得归因具体说话人，不得解释原因，不得改变内容事实。"
-        ),
-    }
-
-    assert _emotion_overview_guidance(
-        SimpleNamespace(label="生气", confidence=0.69, scope="whole_audio")
-    )["reason"] == "confidence_below_threshold"
-    assert _emotion_overview_guidance(
-        SimpleNamespace(label="其他/other", confidence=0.99, scope="whole_audio")
-    )["reason"] == "noninformative_label"
-    assert _emotion_overview_guidance(
-        SimpleNamespace(label="开心", confidence=0.95, scope="speaker")
-    )["reason"] == "unsupported_scope"
-    assert _emotion_overview_guidance(None)["reason"] == "emotion_unavailable"
-
-
-def test_emotion_clause_cannot_replace_dialogue_content():
-    analysis = {
-        "answer": "整段对话整体呈现吃惊/surprised",
-        "summary": "整段对话整体呈现吃惊/surprised",
-        "content_digest": {
-            "overview": "整段对话整体呈现吃惊/surprised",
-            "key_points": ["天气状况被提及", "早饭情况成为话题", "食物种类被询问"],
-        },
-    }
-    repaired = _ensure_emotion_supplements_overview(
-        analysis,
-        {
-            "may_mention": True,
-            "observed_label": "吃惊/surprised",
-        },
-    )
-    expected = (
-        "对话主要围绕天气状况被提及、早饭情况成为话题以及食物种类被询问展开，"
-        "整段对话整体呈现吃惊/surprised的情绪特征。"
-    )
-    assert repaired is True
-    assert analysis["content_digest"]["overview"] == expected
-    assert analysis["summary"] == expected
-    assert analysis["answer"] == expected
-
-
-def test_substantive_overview_is_not_rewritten():
-    original = "对话讨论了服务器部署和接口接入情况，并确定下一步使用实际音频联调。"
-    analysis = {
-        "answer": original,
-        "summary": original,
-        "content_digest": {
-            "overview": original,
-            "key_points": ["服务器部署", "接口接入"],
-        },
-    }
-    assert _ensure_emotion_supplements_overview(
-        analysis,
-        {"may_mention": True, "observed_label": "中立"},
-    ) is False
-    assert analysis["content_digest"]["overview"] == original
-
-
-def test_anonymous_speaker_labels_are_hidden_only_in_overview():
-    analysis = {
-        "answer": "Speaker_00询问天气，Speaker_01回应目前正在下雨。",
-        "summary": "Speaker_00询问天气，Speaker_01回应目前正在下雨。",
-        "content_digest": {
-            "overview": "Speaker_00询问天气，Speaker_01回应目前正在下雨。",
-            "speaker_contributions": [
-                {"speaker": "Speaker_00", "summary": "询问天气"},
-                {"speaker": "Speaker_01", "summary": "回应天气"},
-            ],
-        },
-    }
-    assert _remove_speaker_labels_from_overview(analysis) is True
-    assert analysis["content_digest"]["overview"] == "询问天气，回应目前正在下雨。"
-    assert analysis["content_digest"]["speaker_contributions"][0]["speaker"] == "Speaker_00"
 
 
 def test_dialogue_prefers_training_primary(monkeypatch):

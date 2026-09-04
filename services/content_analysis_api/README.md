@@ -2,7 +2,9 @@
 
 This service completes work item 4 by orchestrating already-deployed services:
 
-- LiveTalking `/transcribe_audio`: Qwen3-ASR, BEATs and optional FunASR/CAM++ diarization;
+- LiveTalking `/transcribe_audio`: Qwen3-ASR;
+- LiveTalking `/diarize_audio`: FunASR/CAM++ speaker diarization;
+- LiveTalking `/analyze_environment`: full-duration BEATs window analysis;
 - emotion2vec `/predict`;
 - Ollama `qwen2.5:7b` for evidence-grounded content analysis.
 
@@ -31,17 +33,41 @@ Then call `http://127.0.0.1:18081`. On the deployment host the generated key is
 stored at `/home/hf/.config/content-analysis-api.key` with mode `0600`; it is
 not committed to Git.
 
-## Audio example
+## Analysis modes
+
+- `quick_summary`: runs only ASR and text understanding. It never starts
+  diarization, BEATs or emotion2vec.
+- `multimodal_analysis`: independently runs ASR, diarization, full-duration
+  BEATs and emotion2vec, then sends all successful evidence to the multimodal
+  analyzer. A failed optional service produces `status=partial`; successful
+  results remain in the response.
+
+## Quick summary example
 
 ```bash
 curl -X POST http://SERVER:18081/v1/audio/analyze \
   -H "X-API-Key: $CONTENT_ANALYSIS_API_KEY" \
   -F "file=@conversation.wav" \
+  -F "analysis_mode=quick_summary" \
+  -F "tasks=digest,summary"
+```
+
+## Complete analysis example
+
+```bash
+curl -X POST http://SERVER:18081/v1/audio/analyze \
+  -H "X-API-Key: $CONTENT_ANALYSIS_API_KEY" \
+  -F "file=@conversation.wav" \
+  -F "analysis_mode=multimodal_analysis" \
   -F "question=梳理内容如何推进，并分析Speaker之间的观点和关系" \
   -F "tasks=digest,summary,qa,relationships,speakers,emotion,scene" \
   -F "content_type_hint=auto" \
   -F 'speaker_aliases={"Speaker_00":"张三","Speaker_01":"李四"}'
 ```
+
+The response includes `attempted_tasks`, `executed_tasks`, `skipped_tasks`,
+`failed_tasks` and `degraded`, allowing callers to display partial success
+without discarding ASR, speaker, emotion or scene results.
 
 `content_digest` is not a fixed meeting template. It classifies the content as
 meeting, interview, customer service, lecture, daily conversation or other,

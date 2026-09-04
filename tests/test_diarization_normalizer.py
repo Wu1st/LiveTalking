@@ -83,6 +83,32 @@ class DiarizationNormalizerTest(unittest.TestCase):
         self.assertEqual(result["segments"][0]["text"], "你好。")
         self.assertEqual(result["speaker_segments"][0]["text"], "你好。继续，")
 
+    def test_removes_cross_segment_leading_punctuation(self):
+        """CT-Punc boundary marks are not exposed as new evidence fragments."""
+        result = normalize_result(
+            {
+                "text": "清晨的阳光穿过窗帘，，轻轻落下。。我开始工作。，认真沟通。",
+                "sentence_info": [
+                    {"spk": 0, "start": 0, "end": 1000, "text": "清晨的阳光穿过窗帘，"},
+                    {"spk": 0, "start": 1100, "end": 2000, "text": "，轻轻落下。"},
+                    {"spk": 0, "start": 2100, "end": 3000, "text": "。我开始工作。"},
+                    {"spk": 0, "start": 3100, "end": 4000, "text": "，认真沟通。"},
+                    {"spk": 0, "start": 4100, "end": 4200, "text": "。"},
+                ],
+            },
+            postprocess_text=lambda value: value,
+        )
+
+        self.assertEqual(
+            [item["text"] for item in result["segments"]],
+            ["清晨的阳光穿过窗帘，", "轻轻落下。", "我开始工作。", "认真沟通。"],
+        )
+        self.assertEqual(
+            result["text"],
+            "清晨的阳光穿过窗帘，轻轻落下。我开始工作。认真沟通。",
+        )
+        self.assertNotIn("。，", result["text"])
+
 
 if __name__ == "__main__":
     unittest.main()

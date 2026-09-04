@@ -16,6 +16,7 @@ from aiohttp import ClientError, ClientSession, ClientTimeout, FormData, web
 MAX_AUDIO_BYTES = 80 * 1024 * 1024
 MAX_FIELD_CHARS = 10_000
 FORWARDED_FIELDS = {
+    "analysis_mode",
     "question",
     "tasks",
     "language",

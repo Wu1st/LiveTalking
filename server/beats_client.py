@@ -116,6 +116,40 @@ _ONTOLOGY = _load_ontology()
 _LABELS_ZH_BY_ID, _LABELS_BY_CLASS = _load_label_translations()
 
 
+def _normalize_event(raw_event: dict[str, Any]) -> dict[str, Any]:
+    """Attach stable AudioSet ids plus English and Chinese display labels."""
+    event = dict(raw_event)
+    class_id_raw = event.get("class_id")
+    try:
+        class_id = int(class_id_raw)
+    except (TypeError, ValueError):
+        class_id = -1
+    checkpoint_label = _LABELS_BY_CLASS.get(class_id, {})
+    label_id = str(
+        event.get("label_id")
+        or event.get("label")
+        or checkpoint_label.get("label_id")
+        or ""
+    )
+    label = str(
+        checkpoint_label.get("en")
+        or _ONTOLOGY.get(label_id)
+        or label_id
+        or "Unknown"
+    )
+    label_zh = str(
+        checkpoint_label.get("zh")
+        or _LABELS_ZH_BY_ID.get(label_id)
+        or _COMMON_LABELS_ZH.get(label)
+        or label
+    )
+    event["class_id"] = class_id
+    event["label_id"] = label_id
+    event["label"] = label
+    event["label_zh"] = label_zh
+    return event
+
+
 def _format_summary(events: list[dict[str, Any]], limit: int = 5) -> str:
     if not events:
         return "未检测到置信度足够的声音事件"
@@ -206,44 +240,39 @@ class BeatsClient:
                 detail = payload.get("detail") if isinstance(payload, dict) else payload
                 raise RuntimeError(f"BEATs HTTP {response.status}: {detail}")
 
-        events = []
-        for raw_event in payload.get("events", []):
-            event = dict(raw_event)
-            class_id_raw = event.get("class_id")
-            try:
-                class_id = int(class_id_raw)
-            except (TypeError, ValueError):
-                class_id = -1
-            checkpoint_label = _LABELS_BY_CLASS.get(class_id, {})
-            label_id = str(
-                event.get("label")
-                or event.get("label_id")
-                or checkpoint_label.get("label_id")
-                or ""
-            )
-            label = str(
-                checkpoint_label.get("en")
-                or _ONTOLOGY.get(label_id)
-                or label_id
-                or "Unknown"
-            )
-            label_zh = str(
-                checkpoint_label.get("zh")
-                or _LABELS_ZH_BY_ID.get(label_id)
-                or _COMMON_LABELS_ZH.get(label)
-                or label
-            )
-            event["class_id"] = class_id
-            event["label_id"] = label_id
-            event["label"] = label
-            event["label_zh"] = label_zh
-            events.append(event)
+        events = [
+            _normalize_event(raw_event)
+            for raw_event in payload.get("events", [])
+            if isinstance(raw_event, dict)
+        ]
+        event_segments = [
+            _normalize_event(raw_event)
+            for raw_event in payload.get("event_segments", [])
+            if isinstance(raw_event, dict)
+        ]
+        windows = []
+        for raw_window in payload.get("windows", []):
+            if not isinstance(raw_window, dict):
+                continue
+            window = dict(raw_window)
+            window["events"] = [
+                _normalize_event(raw_event)
+                for raw_event in raw_window.get("events", [])
+                if isinstance(raw_event, dict)
+            ]
+            windows.append(window)
 
         return {
             "text": _format_summary(events),
             "events": events,
+            "event_segments": event_segments,
+            "windows": windows,
             "model": payload.get("model"),
             "audio_duration_seconds": payload.get("audio_duration_seconds"),
+            "analyzed_duration_seconds": payload.get("analyzed_duration_seconds"),
+            "window_seconds": payload.get("window_seconds"),
+            "window_hop_seconds": payload.get("window_hop_seconds"),
+            "window_count": payload.get("window_count"),
             "decode_ms": payload.get("decode_ms"),
             "inference_ms": payload.get("inference_ms"),
         }

@@ -8,6 +8,8 @@ from typing import Any
 
 
 _CJK_CHARACTER = r"\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff"
+_BOUNDARY_PUNCTUATION = "，。！？；：,.!?;:"
+_TERMINAL_PUNCTUATION = "。！？.!?"
 
 
 def normalize_punctuation(text: str) -> str:
@@ -72,6 +74,39 @@ def _join_transcript_text(left: str, right: str) -> str:
     ):
         separator = ""
     return normalize_punctuation(f"{left}{separator}{right}")
+
+
+def _clean_segment_boundary(
+    previous_text: str,
+    current_text: str,
+) -> tuple[str, str]:
+    """Move duplicated leading punctuation onto the preceding segment.
+
+    SenseVoice and CT-Punc can place the same sentence-boundary mark at the
+    end of one segment and the beginning of the next.  Segment-local cleanup
+    cannot see that duplication, so normalize it after chronological sorting.
+    """
+    previous = normalize_punctuation(previous_text)
+    current = normalize_punctuation(current_text)
+    match = re.match(rf"^[{re.escape(_BOUNDARY_PUNCTUATION)}]+", current)
+    if match is None:
+        return previous, current
+
+    marks = match.group(0)
+    current = current[match.end() :].lstrip()
+    if not previous:
+        return previous, current
+
+    preferred = next(
+        (mark for mark in marks if mark in _TERMINAL_PUNCTUATION),
+        marks[0],
+    )
+    trailing = previous[-1]
+    if trailing not in _BOUNDARY_PUNCTUATION:
+        previous = normalize_punctuation(previous + preferred)
+    elif preferred in _TERMINAL_PUNCTUATION and trailing not in _TERMINAL_PUNCTUATION:
+        previous = normalize_punctuation(previous[:-1] + preferred)
+    return previous, current
 
 
 def _as_seconds(value: Any, unit: str | None = None) -> float:
@@ -184,6 +219,14 @@ def normalize_result(
     speaker_map: dict[str, str] = {}
     sentence_segments: list[dict[str, Any]] = []
     for speaker_key, start, end, text in parsed_segments:
+        previous_text = sentence_segments[-1]["text"] if sentence_segments else ""
+        previous_text, text = _clean_segment_boundary(previous_text, text)
+        if sentence_segments:
+            sentence_segments[-1]["text"] = previous_text
+        # Punctuation-only fragments contain no speech content and should not
+        # become standalone LLM evidence segments.
+        if not text:
+            continue
         speaker = speaker_map.setdefault(
             speaker_key,
             f"Speaker_{len(speaker_map):02d}",
@@ -223,13 +266,17 @@ def normalize_result(
             }
         )
 
-    raw_text = str(payload.get("text") or "").strip()
-    if postprocess_text is not None:
-        raw_text = postprocess_text(raw_text).strip()
-    raw_text = normalize_punctuation(raw_text)
+    # Rebuild the full text from the boundary-cleaned timeline.  The payload's
+    # top-level text can contain cross-segment sequences such as "。，" even
+    # when each individual fragment looks locally valid.
+    raw_text = ""
+    for segment in sentence_segments:
+        raw_text = _join_transcript_text(raw_text, segment["text"])
     if not raw_text:
-        for segment in sentence_segments:
-            raw_text = _join_transcript_text(raw_text, segment["text"])
+        raw_text = str(payload.get("text") or "").strip()
+        if postprocess_text is not None:
+            raw_text = postprocess_text(raw_text).strip()
+        raw_text = normalize_punctuation(raw_text)
 
     return {
         "text": raw_text,

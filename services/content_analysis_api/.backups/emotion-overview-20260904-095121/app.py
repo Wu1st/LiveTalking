@@ -293,14 +293,6 @@ SYSTEM_PROMPT = """你是严谨的多模态对话内容分析器。输入是上�
 3. 区分模型观测与推断；人物关系证据不足时relation必须为“无法判断”。
 4. 情绪scope为whole_audio时，只能描述整段音频，不能擅自归因给某个Speaker。
    emotion.label是上游模型的原始标签，必须逐字保留；例如“其他/other”绝不等于“中立”。
-   输入中的_generation_guidance.emotion_in_overview是服务器计算的硬门禁：只有may_mention=true
-   时，才允许把observed_label作为一个简短从句自然写入content_digest.overview，用“整段对话
-   整体呈现/整体语气”等表述，最多一次。overview必须先概括对话中至少两个可确认的内容点；
-   原文不足两个时覆盖全部内容点。情绪从句只能补充正文，绝不能成为overview的唯一内容。
-   overview不得出现Speaker_00、Speaker_01等技术标签；说话人细节只放在独立分析字段中。
-   不得据此解释情绪原因、推断态度或冲突，也不得影响对话事实、决定和人物关系。
-   may_mention=false时，overview中不得提及或猜测任何情绪；独立的emotion_analysis仍由服务器
-   原样提供。
 5. 场景只根据acoustic_context判断；只有Speech时不能推断具体地点。
    acoustic_context中的事件带全局起止时间，必须综合整段音频，不能只依据开头窗口。
    若conversation.diarization_available为false，不得把临时Speaker_00解释为真实的一位说话人。
@@ -1571,157 +1563,6 @@ def apply_grounding_guardrails(
     return result
 
 
-EMOTION_OVERVIEW_MIN_CONFIDENCE = 0.70
-_NONINFORMATIVE_EMOTION_LABELS = frozenset(
-    {
-        "other",
-        "unknown",
-        "其他",
-        "其他/other",
-        "未知",
-        "无法判断",
-    }
-)
-
-
-def _emotion_overview_guidance(
-    emotion: EmotionObservation | None,
-) -> dict[str, Any]:
-    """Decide whether a whole-audio observation may enter the prose overview.
-
-    The raw observation is always kept in ``emotion_analysis``.  This helper
-    only controls whether the writer may mention it in the natural dialogue
-    paragraph, where a weak or non-informative label would otherwise sound
-    like an unsupported interpretation.
-    """
-
-    if emotion is None:
-        return {
-            "may_mention": False,
-            "reason": "emotion_unavailable",
-            "observed_label": None,
-            "confidence": None,
-            "scope": None,
-        }
-
-    label = str(emotion.label or "").strip()
-    normalized_label = re.sub(r"\s+", "", label).casefold()
-    try:
-        confidence = float(emotion.confidence)
-    except (TypeError, ValueError):
-        confidence = None
-    if confidence is not None and not 0.0 <= confidence <= 1.0:
-        confidence = None
-
-    reason = "eligible"
-    may_mention = True
-    if emotion.scope != "whole_audio":
-        may_mention = False
-        reason = "unsupported_scope"
-    elif not label or normalized_label in _NONINFORMATIVE_EMOTION_LABELS:
-        may_mention = False
-        reason = "noninformative_label"
-    elif confidence is None:
-        may_mention = False
-        reason = "confidence_unavailable"
-    elif confidence < EMOTION_OVERVIEW_MIN_CONFIDENCE:
-        may_mention = False
-        reason = "confidence_below_threshold"
-
-    return {
-        "may_mention": may_mention,
-        "reason": reason,
-        "observed_label": label,
-        "confidence": confidence,
-        "scope": emotion.scope,
-        "wording_rule": (
-            "最多用一个从句描述整段对话的整体氛围；逐字使用observed_label；"
-            "不得归因具体说话人，不得解释原因，不得改变内容事实。"
-            if may_mention
-            else "不得在overview、summary或answer中提及或猜测情绪。"
-        ),
-    }
-
-
-def _ensure_emotion_supplements_overview(
-    analysis: dict[str, Any],
-    guidance: dict[str, Any],
-) -> bool:
-    """Repair an overview when the emotion clause displaced all content.
-
-    The multimodal writer is still responsible for natural prose.  This final
-    deterministic guard only handles the unsafe degenerate case where the
-    returned overview is effectively an emotion label and nothing else.  It
-    rebuilds a compact content sentence from the already-grounded key points,
-    then appends the eligible whole-audio observation as a subordinate clause.
-    """
-
-    digest = analysis.get("content_digest")
-    if not isinstance(digest, dict):
-        return False
-    overview = str(digest.get("overview") or "").strip()
-    label = str(guidance.get("observed_label") or "").strip()
-    content_probe = overview
-    if label:
-        content_probe = content_probe.replace(label, "")
-    for boilerplate in (
-        "整段对话整体呈现",
-        "整段对话呈现",
-        "整体语气呈现",
-        "整体语气",
-        "整体情绪",
-        "情绪特征",
-        "的情绪",
-    ):
-        content_probe = content_probe.replace(boilerplate, "")
-    if len(_normalize_text(content_probe)) >= 12:
-        return False
-
-    key_points: list[str] = []
-    for raw in digest.get("key_points") or []:
-        point = str(raw or "").strip().strip("。；;，,、 ")
-        if point and point not in key_points:
-            key_points.append(point)
-        if len(key_points) >= 4:
-            break
-    if not key_points:
-        return False
-
-    if len(key_points) == 1:
-        joined = key_points[0]
-    else:
-        joined = "、".join(key_points[:-1]) + "以及" + key_points[-1]
-    repaired = f"对话主要围绕{joined}展开"
-    if guidance.get("may_mention") and label:
-        repaired += f"，整段对话整体呈现{label}的情绪特征"
-    repaired += "。"
-    digest["overview"] = repaired
-    analysis["summary"] = repaired
-    analysis["answer"] = repaired
-    return True
-
-
-def _remove_speaker_labels_from_overview(analysis: dict[str, Any]) -> bool:
-    """Keep anonymous diarization identifiers out of the reader-facing prose."""
-
-    digest = analysis.get("content_digest")
-    if not isinstance(digest, dict):
-        return False
-    overview = str(digest.get("overview") or "").strip()
-    cleaned = re.sub(
-        r"(?<![A-Za-z0-9_])Speaker(?:_unknown|_\d+)(?![A-Za-z0-9_])\s*",
-        "",
-        overview,
-    )
-    cleaned = re.sub(r"\s+", " ", cleaned).strip()
-    if not cleaned or cleaned == overview:
-        return False
-    digest["overview"] = cleaned
-    analysis["summary"] = cleaned
-    analysis["answer"] = cleaned
-    return True
-
-
 async def _ollama_analyze(
     client: httpx.AsyncClient,
     settings: Settings,
@@ -1793,25 +1634,13 @@ async def _ollama_analyze(
                 "dialogue_understanding": dialogue_metadata,
             },
         )
-    prompt_payload = json.loads(encoded)
-    emotion_guidance = _emotion_overview_guidance(value.emotion)
-    prompt_payload["_generation_guidance"] = {
-        "emotion_in_overview": emotion_guidance,
-    }
     response = await client.post(
         f"{settings.ollama_url}/api/chat",
         json={
             "model": settings.ollama_model,
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},
-                {
-                    "role": "user",
-                    "content": json.dumps(
-                        prompt_payload,
-                        ensure_ascii=False,
-                        separators=(",", ":"),
-                    ),
-                },
+                {"role": "user", "content": encoded.decode("utf-8")},
             ],
             "stream": False,
             "format": COMPACT_ANALYSIS_FORMAT,
@@ -1836,11 +1665,6 @@ async def _ollama_analyze(
     if not isinstance(analysis, dict):
         raise RuntimeError("Ollama analysis result is not an object")
     analysis = apply_grounding_guardrails(analysis, value)
-    speaker_labels_removed = _remove_speaker_labels_from_overview(analysis)
-    overview_repaired = _ensure_emotion_supplements_overview(
-        analysis,
-        emotion_guidance,
-    )
     # Complete mode uses one evidence-grounded multimodal generation.  Do not
     # overwrite its overview with a second text-only generation.
     digest = analysis.get("content_digest")
@@ -1852,9 +1676,6 @@ async def _ollama_analyze(
         "mode": "multimodal",
         "uses_speakers": value.conversation.diarization_available,
         "uses_emotion": value.emotion is not None,
-        "emotion_overview_eligible": emotion_guidance["may_mention"],
-        "emotion_overview_repaired": overview_repaired,
-        "overview_speaker_labels_removed": speaker_labels_removed,
         "uses_scene": bool(value.acoustic_context and value.acoustic_context.events),
     }
     metadata = {
